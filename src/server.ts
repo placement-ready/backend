@@ -5,6 +5,7 @@ import { config } from "./config";
 import { authRoutes } from "./routes/auth.routes";
 import { googleRoutes } from "./routes/google.routes";
 import { userRoutes } from "./routes/user.routes";
+import { mentorRoutes } from "./routes/mentor.routes";
 import { requestLogger } from "./middleware";
 
 // Load environment variables
@@ -26,6 +27,7 @@ app.use(requestLogger);
 app.use("/api/auth", authRoutes());
 app.use("/api/google", googleRoutes());
 app.use("/api/user", userRoutes());
+app.use("/api/mentor", mentorRoutes());
 
 // Root route
 app.get("/", (req: Request, res: Response) => {
