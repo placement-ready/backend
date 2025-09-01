@@ -6,6 +6,7 @@ import { authRoutes } from "./routes/auth.routes";
 import { googleRoutes } from "./routes/google.routes";
 import { userRoutes } from "./routes/user.routes";
 import { requestLogger } from "./middleware";
+import resumeTemplatesRouter from './routes/template.route';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,7 @@ app.use(requestLogger);
 app.use("/api/auth", authRoutes());
 app.use("/api/google", googleRoutes());
 app.use("/api/user", userRoutes());
+app.use('/api/resume-templates', resumeTemplatesRouter);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {
