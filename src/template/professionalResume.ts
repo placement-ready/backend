@@ -1,0 +1,57 @@
+export const professionalResume = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Professional Resume</title>
+  <style>
+    body { font-family: 'Georgia', serif; margin: 30px; color: #2c4f3f; background: #fff; }
+    .header { text-align: center; font-size: 30px; font-weight: bold; margin-bottom: 5px; color: #276f55;}
+    .contact { text-align: center; font-size: 13px; margin-bottom: 6px; }
+    .summary { color: #276f55; font-weight: bold; }
+    h2 { font-size: 16px; font-weight: bold; color: #276f55; margin-top: 28px; border-bottom: 1px solid #bee2d6;}
+    .section { margin-bottom: 10px; }
+    .job-title, .degree { font-weight: bold;}
+    .job-details, .edu-details { font-size: 13px; color: #444; }
+    ul { margin-left: 18px; margin-bottom: 4px;}
+  </style>
+</head>
+<body>
+  <div class="header">{{fullName}}</div>
+  <div class="contact">{{phone}} | {{email}} | {{linkedIn}} | {{github}}</div>
+  <div class="summary">Summary — {{summary}}</div>
+  <h2>Skills</h2>
+    <div><b>Automation:</b> {{skills.automation}}</div>
+    <div><b>Cloud:</b> {{skills.cloud}}</div>
+    <div><b>Languages:</b> {{skills.languages}}</div>
+    <div><b>OS:</b> {{skills.os}}</div>
+    <div><b>Policies:</b> {{skills.policies}}</div>
+    <div><b>Testing:</b> {{skills.testing}}</div>
+  <h2>Experience</h2>
+  {{#each experience}}
+    <div class="section">
+      <span class="job-title">{{company}}</span> | <b>{{role}}</b> <i>{{client}}</i> <br>
+      <div class="job-details">{{dates}}</div>
+      <ul>
+        {{#each bullets}}<li>{{this}}</li>{{/each}}
+      </ul>
+    </div>
+  {{/each}}
+  <h2>Education</h2>
+  <div class="section">
+    <span class="degree">{{degree}}</span> — {{school}}<br>
+    <div class="edu-details">{{details}}</div>
+    <div class="edu-details">Certifications: {{certifications}}</div>
+  </div>
+  <h2>Projects</h2>
+  {{#each projects}}
+    <div class="section">
+      <span class="job-title">{{title}}</span> — {{dates}}<br>
+      <ul>
+        {{#each bullets}}<li>{{this}}</li>{{/each}}
+      </ul>
+    </div>
+  {{/each}}
+</body>
+</html>
+`;

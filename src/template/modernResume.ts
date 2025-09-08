@@ -1,0 +1,49 @@
+export const modernResume = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Modern Resume</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; margin: 36px; color: #222; }
+    .header { text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 6px;}
+    .contact { text-align: center; font-size: 14px; margin-bottom: 4px;}
+    h2 { font-size: 16px; font-weight: bold; margin-top: 28px; border-bottom: 1px solid #2996d4;}
+    .section { margin-bottom: 14px; }
+    .job-title, .degree { font-weight: bold;}
+    .job-details, .edu-details { font-size: 13px; color: #444; margin-bottom: 2px;}
+    .highlight { color: #2996d4; }
+    ul { margin-left: 16px;}
+  </style>
+</head>
+<body>
+  <div class="header highlight">{{fullName}}</div>
+  <div class="contact">
+    {{location}} | {{email}} | {{phone}} | {{website}} | {{linkedin}} | {{github}}
+  </div>
+  <h2 class="highlight">Welcome to RenderCV!</h2>
+  <div>{{summary}}</div>
+  <h2>Quick Guide</h2>
+  <ul>{{#each quickGuide}}<li>{{this}}</li>{{/each}}</ul>
+  <h2 class="highlight">Education</h2>
+  {{#each education}}
+  <div class="section">
+    <span class="degree">{{degree}}</span> — <span>{{school}}</span>
+    <div class="edu-details">GPA: {{gpa}} ({{gpaLink}})</div>
+    <div class="edu-details">Coursework: {{coursework}}</div>
+    <div class="edu-details">{{dates}}</div>
+  </div>
+  {{/each}}
+  <h2 class="highlight">Experience</h2>
+  {{#each experience}}
+  <div class="section">
+    <span class="job-title">{{company}}</span>, <span>{{role}}</span>
+    <div class="job-details">{{dates}} | {{location}}</div>
+    <ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>
+  </div>
+  {{/each}}
+  <h2>Publications</h2>
+  <ul>{{#each publications}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>
+`;

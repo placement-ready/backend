@@ -8,6 +8,7 @@ import { userRoutes } from "./routes/user.routes";
 import { requestLogger } from "./middleware";
 import resumeTemplatesRouter from './routes/template.routes';
 import resumeInfoRouter from './routes/resumeInfo.routes';
+import pdfRouter from "./routes/pdf.routes";
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +34,7 @@ app.use("/api/google", googleRoutes());
 app.use("/api/user", userRoutes());
 app.use('/api/resume-templates', resumeTemplatesRouter);
 app.use('/api/resume-info', resumeInfoRouter);
+app.use("/api", pdfRouter);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {

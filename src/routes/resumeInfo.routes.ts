@@ -4,7 +4,11 @@ import { authenticateToken } from "../middleware/auth";
 const router = express.Router();
 
 // GET the user's resume info
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/test", (req, res) => {
+  res.json({ message: "Test route works, no auth needed!" });
+});
+
+router.get("/", async (req, res) => {
   const userId = req.user?.userId;
   try {
     const resume = await ResumeInfo.findOne({ userId }).populate("template");
@@ -15,7 +19,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // CREATE or UPDATE resume info (now always references template)
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", async (req, res) => {
   const data = req.body;
   data.userId = req.user?.userId; // get userId from JWT
   try {
@@ -35,7 +39,7 @@ router.post("/", authenticateToken, async (req, res) => {
 });
 
 // DELETE resume info
-router.delete("/", authenticateToken, async (req, res) => {
+router.delete("/", async (req, res) => {
   const userId = req.user?.userId;
   try {
     await ResumeInfo.deleteOne({ userId });

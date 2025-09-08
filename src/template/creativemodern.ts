@@ -1,0 +1,62 @@
+export const creativeModernResume = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Creative Modern Resume</title>
+  <style>
+    body { font-family: 'Roboto', 'Arial', sans-serif; margin: 42px; color: #202726; background: #fff; }
+    .header { text-align: center; margin-bottom: 5px; }
+    .header-name { font-size: 34px; font-weight: 700; letter-spacing: 0.02em; }
+    .header-title { font-size: 18px; font-weight: 400; }
+    .header-links { font-size: 15px; margin-bottom: 18px; color: #444; }
+    hr { margin: 20px 0; }
+    h2 { font-size: 16px; text-transform: uppercase; font-weight: bold; margin-top: 30px; border-bottom: 1px solid #e4e4e4; }
+    .section-list { margin: 0; padding-left: 16px; }
+    .role-title { font-weight: bold; }
+    .details-row { font-size: 13px; color: #888; font-style: italic; margin-bottom: 5px; }
+    ul, li { margin-bottom: 2px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-name">{{fullName}}</div>
+    <div class="header-title">{{jobTitle}}</div>
+    <div class="header-links">{{portfolio}} | {{github}} | {{email}} | {{linkedin}}</div>
+  </div>
+  <hr>
+  <section><p>{{summary}}</p></section>
+  <section>
+    <h2>Skills</h2>
+    <div>
+      <b>Tools and Languages</b>: {{toolsLanguages}}<br>
+      <b>Quantitative Research</b>: {{quantResearch}}<br>
+      <b>Communication</b>: {{communication}}
+    </div>
+  </section>
+  <section>
+    <h2>Technical Experience</h2>
+    {{#each experience}}
+    <div>
+      <span class="role-title">{{role}}</span> / {{company}}<br>
+      <span class="details-row">{{startDate}} — {{endDate}} | {{location}}</span>
+      <ul class="section-list">{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>
+    </div>
+    {{/each}}
+  </section>
+  <section>
+    <h2>Education</h2>
+    {{#each education}}
+    <div>
+      <b>{{degree}}</b>, {{school}}<br>
+      <span class="details-row">{{year}}</span>
+    </div>
+    {{/each}}
+  </section>
+  <section>
+    <h2>Activities</h2>
+    <ul class="section-list">{{#each activities}}<li>{{this}}</li>{{/each}}</ul>
+  </section>
+</body>
+</html>
+`;
