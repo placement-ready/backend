@@ -21,7 +21,7 @@ app.use("/api/health", async (req: Request, res: Response) => {
 
 // Middleware
 app.use(cors({
-  origin: "http://localhost:3000",   // The frontend dev URL (must match exactly)
+  origin: "http://localhost:3000",   
   credentials: true
 }));
 app.use(express.json());

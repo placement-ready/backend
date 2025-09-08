@@ -8,19 +8,16 @@ import Handlebars from "handlebars";
 
 const router = express.Router();
 
-// PDF Generation Route (Updated - no userId param)
+// PDF Generation Route
 router.post("/render-resume", async (req, res) => {
   try {
-    // For testing without auth - use a default userId or get from request body
-    const userId = req.body.userId || "testUser123";
-    
-    const resumeInfo = await ResumeInfo.findOne({ userId }).populate("template");
+    // Find the first/any resume
+    const resumeInfo = await ResumeInfo.findOne().populate("template");
     
     if (!resumeInfo || !resumeInfo.template) {
       return res.status(404).json({ error: "Resume info or template not found" });
     }
 
-    // Cast to any to avoid TypeScript issues with populated fields
     const info = resumeInfo.toObject() as any;
     
     if (!info.template.templateFile) {
@@ -53,19 +50,16 @@ router.post("/render-resume", async (req, res) => {
   }
 });
 
-// HTML Preview Route (New - no userId param)
+// HTML Preview Route 
 router.post("/render-html", async (req, res) => {
   try {
-    // For testing without auth - use a default userId or get from request body
-    const userId = req.body.userId || "testUser123";
-    
-    const resumeInfo = await ResumeInfo.findOne({ userId }).populate("template");
+    // Find the first/any resume (no userId filter)
+    const resumeInfo = await ResumeInfo.findOne().populate("template");
     
     if (!resumeInfo || !resumeInfo.template) {
       return res.status(404).json({ error: "Resume info or template not found" });
     }
 
-    // Cast to any to avoid TypeScript issues with populated fields
     const info = resumeInfo.toObject() as any;
     
     if (!info.template.templateFile) {
