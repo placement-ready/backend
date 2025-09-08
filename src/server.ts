@@ -6,7 +6,8 @@ import { authRoutes } from "./routes/auth.routes";
 import { googleRoutes } from "./routes/google.routes";
 import { userRoutes } from "./routes/user.routes";
 import { requestLogger } from "./middleware";
-import resumeTemplatesRouter from './routes/template.route';
+import resumeTemplatesRouter from './routes/template.routes';
+import resumeInfoRouter from './routes/resumeInfo.routes';
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +19,10 @@ app.use("/api/health", async (req: Request, res: Response) => {
 });
 
 // Middleware
-app.use(cors(config.cors));
+app.use(cors({
+  origin: "http://localhost:3000",   // The frontend dev URL (must match exactly)
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
@@ -28,6 +32,7 @@ app.use("/api/auth", authRoutes());
 app.use("/api/google", googleRoutes());
 app.use("/api/user", userRoutes());
 app.use('/api/resume-templates', resumeTemplatesRouter);
+app.use('/api/resume-info', resumeInfoRouter);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {

@@ -105,7 +105,7 @@ const resumeTemplates: Record<string, QuestionData[]> = {
       link: "https://res.cloudinary.com/dsj6bnrvz/image/upload/v1756574495/resume10_rsp6mp.jpg",
       title: "Clean Resume",
       description: "A clean and highly readable resume template designed for clarity, highlighting skills and experience without unnecessary clutter.",
-      latexCode: "",compiledPdf: "",
+      latexCode: "", compiledPdf: "",
       atsFriendly: true,
       atsNotes: "Readable and ATS-friendly layout",
       preferredBy: ["Corporate", "Developers"],
