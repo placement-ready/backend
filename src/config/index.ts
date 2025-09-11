@@ -28,6 +28,10 @@ interface MailProviderConfig {
 	from: string;
 }
 
+interface AiConfig {
+	apiKey: string;
+}
+
 interface AppConfig {
 	server: ServerConfig;
 	cors: CorsOptions;
@@ -35,6 +39,7 @@ interface AppConfig {
 	jwt: JwtConfig;
 	database: DatabaseConfig;
 	mail: MailProviderConfig;
+	ai: AiConfig;
 }
 
 export const config: AppConfig = {
@@ -46,7 +51,7 @@ export const config: AppConfig = {
 
 	// CORS options
 	cors: {
-		origin: process.env.CORS_ORIGIN || "*",
+		origin: process.env.CORS_ORIGIN || "http://localhost:3000",
 		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 		allowedHeaders: ["Content-Type", "Authorization"],
 	},
@@ -74,6 +79,11 @@ export const config: AppConfig = {
 	mail: {
 		apiKey: process.env.RESEND_API_KEY || "",
 		from: process.env.EMAIL_FROM || "",
+	},
+
+	// AI configuration
+	ai: {
+		apiKey: process.env.GEMINI_API_KEY || "",
 	},
 };
 
