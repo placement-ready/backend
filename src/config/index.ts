@@ -32,6 +32,12 @@ interface AiConfig {
 	apiKey: string;
 }
 
+interface CloudinaryConfig {
+	cloudName: string;
+	apiKey: string;
+	apiSecret: string;
+}
+
 interface AppConfig {
 	server: ServerConfig;
 	cors: CorsOptions;
@@ -40,6 +46,7 @@ interface AppConfig {
 	database: DatabaseConfig;
 	mail: MailProviderConfig;
 	ai: AiConfig;
+	cloudinary: CloudinaryConfig;
 }
 
 export const config: AppConfig = {
@@ -84,6 +91,13 @@ export const config: AppConfig = {
 	// AI configuration
 	ai: {
 		apiKey: process.env.GEMINI_API_KEY || "",
+	},
+
+	// Cloudinary configuration
+	cloudinary: {
+		cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+		apiKey: process.env.CLOUDINARY_API_KEY || "",
+		apiSecret: process.env.CLOUDINARY_API_SECRET || "",
 	},
 };
 
