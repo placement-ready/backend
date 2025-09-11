@@ -1,0 +1,38 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Simple Professional Resume</title>
+  <style>
+    body { font-family: 'Times New Roman', serif; margin: 32px; color: #222;}
+    .header { text-align: center; font-size: 30px; font-weight: bold; margin-bottom: 6px;}
+    .contact { text-align: center; font-size: 14px; margin-bottom: 8px;}
+    h2 { font-size: 16px; font-weight: bold; border-bottom: 1px solid #aaa; margin-top: 26px;}
+    .section { margin-bottom: 12px;}
+    .job-title, .degree { font-weight: bold;}
+    .details { font-size: 13px; color: #444;}
+    ul { margin-left: 16px;}
+  </style>
+</head>
+<body>
+  <div class="header">{{fullName}}</div>
+  <div class="contact">{{email}} | {{phone}} | {{city}}</div>
+  <h2>Education</h2>
+  {{#each education}}
+    <div class="section">
+      <span class="degree">{{degree}}</span>, {{school}} (<span class="details">{{year}}</span>)
+    </div>
+  {{/each}}
+  <h2>Experience</h2>
+  {{#each experience}}
+    <div class="section">
+      <span class="job-title">{{role}}</span> @ {{company}}<br>
+      <span class="details">{{dates}} | {{location}}</span>
+      <ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>
+    </div>
+  {{/each}}
+  <h2>Skills</h2>
+  <ul>{{#each skills}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>
