@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Creative Professional Resume</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 34px; color: #383838;}
+    .header { text-align: left; font-size: 32px; font-weight: bold; margin-bottom: 6px;}
+    .contact { text-align: left; font-size: 13px; margin-bottom: 10px; }
+    .right-update { float: right; font-size: 12px; color: #b7b7b7; }
+    h2 { font-size: 16px; font-weight: bold; margin-top: 28px; color: #929292; border-bottom: 1px solid #ddd;}
+    .section { margin-bottom: 10px;}
+    .job-title, .degree { font-weight: bold;}
+    .job-details, .edu-details { font-size: 13px; color: #444;}
+    ul { margin-left: 16px;}
+    .col-header {font-size: 22px;font-weight: bold;margin-bottom: 10px;}
+    .col {display:inline-block;width:49%;vertical-align:top;}
+  </style>
+</head>
+<body>
+  <span class="right-update">Last updated: {{lastUpdated}}</span>
+  <div class="header">{{fullName}}</div>
+  <div class="contact">{{email}} | {{phone}} | {{website}} | {{linkedin}} | {{github}}</div>
+  <div class="col">
+    <div class="col-header">Education</div>
+    {{#each education}}
+      <div class="section">
+        <span class="degree">{{degree}}</span> — <span>{{school}}</span>
+        <span class="edu-details">{{dates}}</span>
+        <span class="edu-details">{{details}}</span>
+      </div>
+    {{/each}}
+    <div class="col-header">Links</div>
+    <ul>
+      {{#each links}}<li>{{this}}</li>{{/each}}
+    </ul>
+    <div class="col-header">Coursework</div>
+    <ul>
+      {{#each coursework}}<li>{{this}}</li>{{/each}}
+    </ul>
+    <div class="col-header">Skills</div>
+    <div><b>Programming:</b> {{skills.programming}}</div>
+    <div><b>Other:</b> {{skills.other}}</div>
+  </div>
+  <div class="col">
+    <div class="col-header">Experience</div>
+    {{#each experience}}
+      <div class="section">
+        <span class="job-title">{{company}}</span> — {{role}}
+        <span class="job-details">{{dates}} | {{location}}</span>
+        <ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>
+      </div>
+    {{/each}}
+    <div class="col-header">Research</div>
+    {{#each research}}
+      <div class="section">
+        <span class="job-title">{{title}}</span> — {{role}}
+        <span class="job-details">{{dates}} | {{location}}</span>
+        <ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>
+      </div>
+    {{/each}}
+    <div class="col-header">Awards</div>
+    <ul>
+      {{#each awards}}<li>{{this}}</li>{{/each}}
+    </ul>
+    <div class="col-header">Publications</div>
+    <ul>
+      {{#each publications}}<li>{{this}}</li>{{/each}}
+    </ul>
+  </div>
+</body>
+</html>
