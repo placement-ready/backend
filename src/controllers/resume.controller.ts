@@ -1,16 +1,16 @@
 import { Response, NextFunction } from "express";
 import { Types } from "mongoose";
-import ResumeData from "../models/resume";
-import ResumeTemplate from "../models/resume";
-import { AuthenticatedRequest, ApiResponse, CreateResumeRequest, UpdateResumeRequest } from "../types";
+import { ResumeData } from "../models/resume";
+import { ResumeTemplate } from "../models/resume";
+import { AuthenticatedRequest, ApiResponse } from "../types";
+import { renderResume } from "../utils/renderResume";
 
-// Utility to attach statusCode without dedicated helper
 const withStatus = (err: Error, code: number) => {
 	(err as any).statusCode = code;
 	return err;
 };
 
-// Get user's resume
+// Get all user's resumes
 export const getResume = async (
 	req: AuthenticatedRequest,
 	res: Response<ApiResponse>,
@@ -18,33 +18,37 @@ export const getResume = async (
 ): Promise<void> => {
 	try {
 		const userId = req.user!.userId;
+		const resumes = await ResumeData.find({ userId: new Types.ObjectId(userId) }).populate("template");
 
-		if (!Types.ObjectId.isValid(userId)) throw withStatus(new Error("Invalid user ID format"), 400);
+		res.status(200).json({
+			success: true,
+			message: "Resumes fetched successfully",
+			data: resumes,
+		});
+	} catch (error) {
+		next(error);
+	}
+};
 
-		const resume = await ResumeData.findOne({ userId: new Types.ObjectId(userId) })
-			.populate("template")
-			.exec();
+// Get resume by ID
+export const getResumeById = async (
+	req: AuthenticatedRequest,
+	res: Response<ApiResponse>,
+	next: NextFunction
+): Promise<void> => {
+	try {
+		const { id } = req.params;
 
-		const payload = resume || {
-			personal: {
-				fullName: "",
-				email: "",
-				phone: "",
-				location: "",
-				website: "",
-				summary: "",
-			},
-			experience: [],
-			education: [],
-			skills: [],
-			achievements: [],
-			template: null,
-		};
+		const resume = await ResumeData.findById(id).populate("template").exec();
+		if (!resume) {
+			res.status(404).json({ success: false, error: "Resume not found" });
+			return;
+		}
 
 		res.status(200).json({
 			success: true,
 			message: "Resume fetched successfully",
-			data: payload,
+			data: resume,
 		});
 	} catch (error) {
 		next(error);
@@ -59,14 +63,7 @@ export const createResume = async (
 ): Promise<void> => {
 	try {
 		const userId = req.user!.userId;
-		const data: CreateResumeRequest = req.body;
-
-		if (!Types.ObjectId.isValid(userId)) throw withStatus(new Error("Invalid user ID format"), 400);
-		if (!data.template || !Types.ObjectId.isValid(data.template))
-			throw withStatus(new Error("Invalid template ID format"), 400);
-
-		const existing = await ResumeData.findOne({ userId: new Types.ObjectId(userId) });
-		if (existing) throw withStatus(new Error("User already has a resume. Use update instead."), 409);
+		const data = req.body;
 
 		const template = await ResumeTemplate.findById(data.template);
 		if (!template) throw withStatus(new Error("Template not found"), 404);
@@ -89,7 +86,7 @@ export const createResume = async (
 	}
 };
 
-// Update resume (create or update)
+// Update resume by ID
 export const updateResume = async (
 	req: AuthenticatedRequest,
 	res: Response<ApiResponse>,
@@ -97,36 +94,25 @@ export const updateResume = async (
 ): Promise<void> => {
 	try {
 		const userId = req.user!.userId;
-		const data: UpdateResumeRequest = req.body;
+		const resumeData = req.body;
 
-		if (!Types.ObjectId.isValid(userId)) throw withStatus(new Error("Invalid user ID format"), 400);
-
-		let resume = await ResumeData.findOne({ userId: new Types.ObjectId(userId) });
+		// Find resume by ID and ensure it belongs to the user
+		const resume = await ResumeData.findOne({
+			_id: resumeData._id,
+			userId: userId,
+		});
 
 		if (!resume) {
-			// Create if doesn't exist (upsert behavior)
-			if (!data.template || !Types.ObjectId.isValid(data.template))
-				throw withStatus(new Error("Invalid template ID format"), 400);
-			const template = await ResumeTemplate.findById(data.template);
-			if (!template) throw withStatus(new Error("Template not found"), 404);
-			resume = new (ResumeData as any)({
-				...data,
-				userId: new Types.ObjectId(userId),
-				template: new Types.ObjectId(data.template),
-			});
-		} else {
-			// Update path
-			if (data.template) {
-				if (!Types.ObjectId.isValid(data.template)) throw withStatus(new Error("Invalid template ID format"), 400);
-				const template = await ResumeTemplate.findById(data.template);
-				if (!template) throw withStatus(new Error("Template not found"), 404);
-				(resume as any).template = new Types.ObjectId(data.template);
-			}
-			Object.assign(resume, { ...data, template: (resume as any).template });
+			res.status(404).json({ success: false, error: "Resume not found or unauthorized" });
+			return;
 		}
 
-		await (resume as any).save();
-		await (resume as any).populate("template");
+		const template = await ResumeTemplate.findById(resumeData.template);
+		if (!template) throw withStatus(new Error("Template not found"), 404);
+
+		resume.set({ ...resumeData, template: resumeData.template });
+		await resume.save();
+		await resume.populate("template");
 
 		res.status(200).json({
 			success: true,
@@ -138,7 +124,7 @@ export const updateResume = async (
 	}
 };
 
-// Delete resume
+// Delete resume by ID
 export const deleteResume = async (
 	req: AuthenticatedRequest,
 	res: Response<ApiResponse>,
@@ -146,9 +132,18 @@ export const deleteResume = async (
 ): Promise<void> => {
 	try {
 		const userId = req.user!.userId;
-		if (!Types.ObjectId.isValid(userId)) throw withStatus(new Error("Invalid user ID format"), 400);
-		const deleted = await ResumeData.findOneAndDelete({ userId: new Types.ObjectId(userId) });
-		if (!deleted) throw withStatus(new Error("Resume not found"), 404);
+		const resumeId = req.params.id;
+
+		// Delete resume by ID and ensure it belongs to the user
+		const deleted = await ResumeData.findOneAndDelete({
+			_id: new Types.ObjectId(resumeId),
+			userId: new Types.ObjectId(userId),
+		});
+
+		if (!deleted) {
+			res.status(404).json({ success: false, error: "Resume not found or unauthorized" });
+			return;
+		}
 
 		res.status(200).json({
 			success: true,
@@ -159,28 +154,27 @@ export const deleteResume = async (
 	}
 };
 
-// Get resume by ID (for admin/recruiter)
-export const getResumeById = async (
+export const compileResume = async (
 	req: AuthenticatedRequest,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const { id } = req.params;
-		if (!Types.ObjectId.isValid(id)) {
-			res.status(400).json({ success: false, error: "Invalid resume ID format" });
-			return;
-		}
-		const resume = await ResumeData.findById(id).populate("template").exec();
+		const { data } = req.body;
+
+		const resume = await ResumeData.findByIdAndUpdate(data._id, data, { new: true }).populate("template");
 		if (!resume) {
 			res.status(404).json({ success: false, error: "Resume not found" });
 			return;
 		}
 
+		const templateName = data.template.templateFile;
+		const compiledHtml = await renderResume(templateName, data);
+
 		res.status(200).json({
 			success: true,
-			message: "Resume fetched successfully",
-			data: resume,
+			message: "Resume compiled successfully",
+			data: compiledHtml,
 		});
 	} catch (error) {
 		next(error);

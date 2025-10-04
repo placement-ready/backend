@@ -86,8 +86,6 @@ export interface CreateResumeRequest {
 	template: string; // ObjectId as string
 }
 
-export interface UpdateResumeRequest extends Partial<CreateResumeRequest> {}
-
 export interface CreateTemplateRequest {
 	title: string;
 	link?: string;

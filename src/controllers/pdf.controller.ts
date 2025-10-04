@@ -4,7 +4,7 @@ import path from "path";
 import puppeteer from "puppeteer";
 import Handlebars from "handlebars";
 import { Types } from "mongoose";
-import ResumeData from "../models/resume";
+import { ResumeData } from "../models/resume";
 import { AuthenticatedRequest, CustomError } from "../types";
 
 const createError = (message: string, statusCode: number): CustomError => {
