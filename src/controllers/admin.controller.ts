@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import ResumeTemplate from "../models/resume";
+import { ResumeTemplate } from "../models/resume";
 import resumeTemplates from "../resumes/templates";
 
 export const seedResumeTemplates = async (req: Request, res: Response) => {
