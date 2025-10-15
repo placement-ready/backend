@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { User, Account, SessionModel, VerificationTokenModel } from "../models";
-import Profile from "../models/profile";
+import  Profile  from "../models/profile";
 import { JwtUtils } from "../utils/jwt";
 import { sendVerificationEmail } from "../utils/mailClient";
 

@@ -9,6 +9,11 @@ import { mentorRoutes } from "./routes/mentor.routes";
 import { templateRoutes } from "./routes/template.routes";
 import { resumeRoutes } from "./routes/resume.routes";
 import { pdfRoutes } from "./routes/pdf.routes";
+// meeting connection 
+import { createServer } from "node:http";
+import { connectToSocket } from "./controllers/socket.controller";
+import meetingRoutes  from "./routes/meeting.routes";
+
 import {
 	requestLogger,
 	errorHandler,
@@ -26,6 +31,9 @@ dotenv.config();
 
 const app: Express = express();
 
+//creating websocket server
+const server = createServer(app);
+const io = connectToSocket(server);
 // Security middleware
 app.use(securityHeaders);
 app.use(compression());
@@ -71,6 +79,7 @@ app.use("/api/mentor", mentorRoutes());
 app.use("/api/templates", templateRoutes());
 app.use("/api/resume", resumeRoutes());
 app.use("/api/pdf", pdfRoutes());
+app.use("/api/meetings", meetingRoutes);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {
