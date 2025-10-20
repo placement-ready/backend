@@ -4,7 +4,7 @@ import bcryptjs from "bcryptjs";
 const Schema = mongoose.Schema;
 
 // User Schema
-interface IUser extends mongoose.Document {
+export interface IUser extends mongoose.Document {
 	_id: mongoose.Types.ObjectId;
 	name?: string;
 	email: string;

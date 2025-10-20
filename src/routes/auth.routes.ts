@@ -14,6 +14,7 @@ import { authenticateToken } from "../middleware/auth";
 import { validateBody, validateParams } from "../middleware/validation";
 import { registerSchema, loginSchema, refreshTokenSchema, emailParamSchema } from "../validations/schemas";
 import { asyncHandler } from "../middleware/errorHandler";
+import { addToHistory, getUserHistory } from "../controllers/meet.controller";
 
 const router = express.Router();
 
@@ -33,6 +34,9 @@ const authRoutes = () => {
 	router.post("/logout", authenticateToken, validateBody(refreshTokenSchema), asyncHandler(logout));
 	router.post("/logout-all", authenticateToken, asyncHandler(logoutAll));
 
+	// User Meeting-activity routes
+	router.post("/addtoactivity", asyncHandler(addToHistory));
+	router.get("/getallactivity", asyncHandler(getUserHistory));
 	return router;
 };
 
