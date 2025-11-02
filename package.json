@@ -1,6 +1,6 @@
 {
 	"engines": {
-		"node": "20.x"
+		"node": "22.x"
 	},
 	"name": "placement-backend",
 	"version": "1.0.0",
@@ -8,6 +8,7 @@
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
+		"prestart": "npm run build",
 		"start": "node dist/index.js",
 		"dev": "nodemon --watch 'src/**/*.ts' --exec ts-node src/index.ts",
 		"test": "echo \"Error: no test specified\" && exit 1"
