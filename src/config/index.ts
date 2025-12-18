@@ -5,18 +5,18 @@ dotenv.config();
 interface ServerConfig {
 	port: number | string;
 	env: string;
+	clientUrl?: string;
+}
+
+interface AuthConfig {
+	authSecret: string;
+	googleClientId: string;
+	googleClientSecret: string;
 }
 
 interface ApiConfig {
 	prefix: string;
 	version: string;
-}
-
-interface JwtConfig {
-	secret: string;
-	refreshSecret: string;
-	expiresIn: string;
-	refreshExpiresIn: string;
 }
 
 interface DatabaseConfig {
@@ -32,35 +32,35 @@ interface AiConfig {
 	apiKey: string;
 }
 
-interface CloudinaryConfig {
-	cloudName: string;
-	apiKey: string;
-	apiSecret: string;
-}
-
 interface AppConfig {
 	server: ServerConfig;
+	auth: AuthConfig;
 	cors: CorsOptions;
 	api: ApiConfig;
-	jwt: JwtConfig;
 	database: DatabaseConfig;
 	mail: MailProviderConfig;
 	ai: AiConfig;
-	cloudinary: CloudinaryConfig;
 }
 
 export const config: AppConfig = {
 	// Server configuration
 	server: {
-		port: process.env.PORT || 5000,
+		port: process.env.PORT || 4000,
 		env: process.env.NODE_ENV || "development",
+		clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
+	},
+
+	// Authentication configuration
+	auth: {
+		authSecret: process.env.AUTH_SECRET || "",
+		googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+		googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
 	},
 
 	// CORS options
 	cors: {
-		origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+		origin: process.env.CLIENT_URL || "http://localhost:3000",
 		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-		allowedHeaders: ["Content-Type", "Authorization"],
 	},
 
 	// API configuration
@@ -69,17 +69,9 @@ export const config: AppConfig = {
 		version: "v1",
 	},
 
-	// JWT configuration
-	jwt: {
-		secret: process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production",
-		refreshSecret: process.env.JWT_REFRESH_SECRET || "your-super-secret-refresh-key-change-in-production",
-		expiresIn: process.env.JWT_EXPIRES_IN || "15m",
-		refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
-	},
-
 	// Database configuration
 	database: {
-		uri: process.env.MONGODB_URI || "mongodb://localhost:27017/placement-db",
+		uri: process.env.MONGODB_URI || "mongodb://localhost:27017/hiremind",
 	},
 
 	// Mail provider configuration
@@ -91,13 +83,6 @@ export const config: AppConfig = {
 	// AI configuration
 	ai: {
 		apiKey: process.env.GEMINI_API_KEY || "",
-	},
-
-	// Cloudinary configuration
-	cloudinary: {
-		cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
-		apiKey: process.env.CLOUDINARY_API_KEY || "",
-		apiSecret: process.env.CLOUDINARY_API_SECRET || "",
 	},
 };
 

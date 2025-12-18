@@ -1,9 +1,13 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { ResumeTemplate } from "../models/resume";
 import { AuthenticatedRequest, ApiResponse } from "../types";
 
 // Get all templates with pagination
-export const getTemplates = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getTemplates = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): Promise<void> => {
 	try {
 		const templates = await ResumeTemplate.find().lean().exec();
 		res.status(200).json({
@@ -18,7 +22,7 @@ export const getTemplates = async (req: Request, res: Response, next: NextFuncti
 
 // Get template by ID
 export const getTemplateById = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
@@ -46,7 +50,7 @@ export const getTemplateById = async (
 
 // Search templates
 export const searchTemplates = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {

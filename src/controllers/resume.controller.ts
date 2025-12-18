@@ -1,29 +1,82 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
-import { ResumeData } from "../models/resume";
-import { ResumeTemplate } from "../models/resume";
-import { AuthenticatedRequest, ApiResponse } from "../types";
+import { ResumeData, ResumeTemplate } from "../models/resume";
+import { ApiResponse } from "../types";
 import { renderResume } from "../utils/renderResume";
 
-const withStatus = (err: Error, code: number) => {
-	(err as any).statusCode = code;
-	return err;
-};
+function requireUser(req: Request, res: Response<ApiResponse>): { userId: string } | null {
+	const user = req.user;
+	if (!user?.id) {
+		res.status(401).json({ success: false, error: "Authentication required" });
+		return null;
+	}
+	return { userId: user.id };
+}
+
+function toObjectId(value: string) {
+	if (!Types.ObjectId.isValid(value)) {
+		return null;
+	}
+	return new Types.ObjectId(value);
+}
 
 // Get all user's resumes
 export const getResume = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const userId = req.user!.userId;
-		const resumes = await ResumeData.find({ userId: new Types.ObjectId(userId) }).populate("template");
+		const auth = requireUser(req, res);
+		if (!auth) return;
+
+		const payload = (req.body?.data ?? {}) as Record<string, any>;
+		const resumeId = payload?._id ? toObjectId(payload._id) : null;
+		const userObjectId = toObjectId(auth.userId);
+		if (!resumeId || !userObjectId) {
+			res.status(400).json({ success: false, error: "Invalid resume identifier" });
+			return;
+		}
+
+		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId }).populate(
+			"template"
+		);
+		if (!resume) {
+			res.status(404).json({ success: false, error: "Resume not found" });
+			return;
+		}
+
+		if (Object.keys(payload).length > 0) {
+			const updates = { ...payload } as Record<string, unknown>;
+			delete updates._id;
+			if (updates.template) {
+				const templateId =
+					typeof updates.template === "string" ? updates.template : (updates.template as any)?._id;
+				const templateObjectId = templateId ? toObjectId(templateId) : null;
+				if (!templateObjectId) {
+					res.status(400).json({ success: false, error: "Invalid template identifier" });
+					return;
+				}
+				updates.template = templateObjectId;
+			}
+			resume.set(updates);
+			await resume.save();
+			await resume.populate("template");
+		}
+
+		const templateDoc: any = resume.get("template");
+		const templateFile = templateDoc?.templateFile;
+		if (!templateFile) {
+			res.status(400).json({ success: false, error: "Template file missing" });
+			return;
+		}
+
+		const compiledHtml = await renderResume(templateFile, resume.toObject());
 
 		res.status(200).json({
 			success: true,
 			message: "Resumes fetched successfully",
-			data: resumes,
+			data: resume,
 		});
 	} catch (error) {
 		next(error);
@@ -32,14 +85,24 @@ export const getResume = async (
 
 // Get resume by ID
 export const getResumeById = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const { id } = req.params;
+		const auth = requireUser(req, res);
+		if (!auth) return;
 
-		const resume = await ResumeData.findById(id).populate("template").exec();
+		const resumeId = toObjectId("");
+		const userObjectId = toObjectId(auth.userId);
+		if (!resumeId || !userObjectId) {
+			res.status(400).json({ success: false, error: "Invalid identifier supplied" });
+			return;
+		}
+
+		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId })
+			.populate("template")
+			.exec();
 		if (!resume) {
 			res.status(404).json({ success: false, error: "Resume not found" });
 			return;
@@ -57,21 +120,38 @@ export const getResumeById = async (
 
 // Create new resume
 export const createResume = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const userId = req.user!.userId;
-		const data = req.body;
+		const auth = requireUser(req, res);
+		if (!auth) return;
 
-		const template = await ResumeTemplate.findById(data.template);
-		if (!template) throw withStatus(new Error("Template not found"), 404);
+		const userObjectId = toObjectId(auth.userId);
+		if (!userObjectId) {
+			res.status(400).json({ success: false, error: "Invalid user identifier" });
+			return;
+		}
+
+		const data = req.body;
+		const templateId = typeof data.template === "string" ? data.template : data.template?._id;
+		const templateObjectId = templateId ? toObjectId(templateId) : null;
+		if (!templateObjectId) {
+			res.status(400).json({ success: false, error: "Template is required" });
+			return;
+		}
+
+		const templateExists = await ResumeTemplate.exists({ _id: templateObjectId });
+		if (!templateExists) {
+			res.status(404).json({ success: false, error: "Template not found" });
+			return;
+		}
 
 		const resume = new ResumeData({
 			...data,
-			userId: new Types.ObjectId(userId),
-			template: new Types.ObjectId(data.template),
+			userId: userObjectId,
+			template: templateObjectId,
 		});
 		await resume.save();
 		await resume.populate("template");
@@ -88,29 +168,50 @@ export const createResume = async (
 
 // Update resume by ID
 export const updateResume = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const userId = req.user!.userId;
+		const auth = requireUser(req, res);
+		if (!auth) return;
+
 		const resumeData = req.body;
-
-		// Find resume by ID and ensure it belongs to the user
-		const resume = await ResumeData.findOne({
-			_id: resumeData._id,
-			userId: userId,
-		});
-
-		if (!resume) {
-			res.status(404).json({ success: false, error: "Resume not found or unauthorized" });
+		const userObjectId = toObjectId(auth.userId);
+		const resumeId = resumeData?._id ? toObjectId(resumeData._id) : null;
+		if (!userObjectId || !resumeId) {
+			res.status(400).json({ success: false, error: "Invalid resume identifier" });
 			return;
 		}
 
-		const template = await ResumeTemplate.findById(resumeData.template);
-		if (!template) throw withStatus(new Error("Template not found"), 404);
+		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId });
+		if (!resume) {
+			res.status(404).json({ success: false, error: "Resume not found" });
+			return;
+		}
 
-		resume.set({ ...resumeData, template: resumeData.template });
+		const updates = { ...resumeData } as Record<string, unknown>;
+		delete updates._id;
+
+		const templateId =
+			typeof resumeData.template === "string" ? resumeData.template : resumeData.template?._id;
+		if (templateId) {
+			const templateObjectId = toObjectId(templateId);
+			if (!templateObjectId) {
+				res.status(400).json({ success: false, error: "Invalid template identifier" });
+				return;
+			}
+
+			const templateExists = await ResumeTemplate.exists({ _id: templateObjectId });
+			if (!templateExists) {
+				res.status(404).json({ success: false, error: "Template not found" });
+				return;
+			}
+
+			updates.template = templateObjectId;
+		}
+
+		resume.set(updates);
 		await resume.save();
 		await resume.populate("template");
 
@@ -126,22 +227,24 @@ export const updateResume = async (
 
 // Delete resume by ID
 export const deleteResume = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const userId = req.user!.userId;
-		const resumeId = req.params.id;
+		const auth = requireUser(req, res);
+		if (!auth) return;
 
-		// Delete resume by ID and ensure it belongs to the user
-		const deleted = await ResumeData.findOneAndDelete({
-			_id: new Types.ObjectId(resumeId),
-			userId: new Types.ObjectId(userId),
-		});
+		const resumeId = toObjectId("");
+		const userObjectId = toObjectId(auth.userId);
+		if (!resumeId || !userObjectId) {
+			res.status(400).json({ success: false, error: "Invalid resume identifier" });
+			return;
+		}
 
+		const deleted = await ResumeData.findOneAndDelete({ _id: resumeId, userId: userObjectId });
 		if (!deleted) {
-			res.status(404).json({ success: false, error: "Resume not found or unauthorized" });
+			res.status(404).json({ success: false, error: "Resume not found" });
 			return;
 		}
 
@@ -155,21 +258,58 @@ export const deleteResume = async (
 };
 
 export const compileResume = async (
-	req: AuthenticatedRequest,
+	req: Request,
 	res: Response<ApiResponse>,
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const { data } = req.body;
+		const auth = requireUser(req, res);
+		if (!auth) return;
 
-		const resume = await ResumeData.findByIdAndUpdate(data._id, data, { new: true }).populate("template");
+		const payload = req.body?.data ?? {};
+		const resumeId = payload?._id ? toObjectId(payload._id) : null;
+		const userObjectId = toObjectId(auth.userId);
+		if (!resumeId || !userObjectId) {
+			res.status(400).json({ success: false, error: "Invalid resume identifier" });
+			return;
+		}
+
+		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId }).populate(
+			"template"
+		);
 		if (!resume) {
 			res.status(404).json({ success: false, error: "Resume not found" });
 			return;
 		}
 
-		const templateName = data.template.templateFile;
-		const compiledHtml = await renderResume(templateName, data);
+		if (Object.keys(payload).length > 0) {
+			const updates = { ...payload } as Record<string, unknown>;
+			delete updates._id;
+
+			if (updates.template) {
+				const templateId =
+					typeof updates.template === "string" ? updates.template : (updates.template as any)?._id;
+				const templateObjectId = templateId ? toObjectId(templateId) : null;
+				if (!templateObjectId) {
+					res.status(400).json({ success: false, error: "Invalid template identifier" });
+					return;
+				}
+				updates.template = templateObjectId;
+			}
+
+			resume.set(updates);
+			await resume.save();
+			await resume.populate("template");
+		}
+
+		const templateDoc: any = resume.get("template");
+		const templateFile = templateDoc?.templateFile;
+		if (!templateFile) {
+			res.status(400).json({ success: false, error: "Template file missing" });
+			return;
+		}
+
+		const compiledHtml = await renderResume(templateFile, resume.toObject());
 
 		res.status(200).json({
 			success: true,

@@ -1,44 +1,31 @@
 import express, { Express, Request, Response } from "express";
-import dotenv from "dotenv";
 import cors from "cors";
-import compression from "compression";
-import { authRoutes } from "./routes/auth.routes";
-import { googleRoutes } from "./routes/google.routes";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { auth } from "./auth/betterAuth";
+
+// Importing route handlers
 import { userRoutes } from "./routes/user.routes";
 import { mentorRoutes } from "./routes/mentor.routes";
 import { templateRoutes } from "./routes/template.routes";
 import { resumeRoutes } from "./routes/resume.routes";
-import { pdfRoutes } from "./routes/pdf.routes";
-// meeting connection 
-import { createServer } from "node:http";
-import { connectToSocket } from "./controllers/socket.controller";
-import meetingRoutes  from "./routes/meeting.routes";
 
-import {
-	requestLogger,
-	errorHandler,
-	notFoundHandler,
-	generalRateLimit,
-	authRateLimit,
-	securityHeaders,
-	sanitizeInput,
-	requestSizeLimit,
-} from "./middleware";
+// Importing middleware and utilities
+import { requestLogger } from "./utils/logger";
+import { errorHandler } from "./middleware/errorHandler";
+import rateLimiter from "./middleware/rateLimiter";
 import { config } from "./config";
-
-// Load environment variables
-dotenv.config();
+import cookieParser from "cookie-parser";
 
 const app: Express = express();
 
-//creating websocket server
-const server = createServer(app);
-const io = connectToSocket(server);
-// Security middleware
-app.use(securityHeaders);
-app.use(compression());
-app.use(requestSizeLimit);
-app.use(sanitizeInput);
+// Root route
+app.get("/", (req: Request, res: Response) => {
+	res.status(200).json({
+		success: true,
+		message: "Welcome to the HireMind API",
+		version: "0.2.0",
+	});
+});
 
 // Health check route
 app.get("/api/health", (req: Request, res: Response) => {
@@ -50,49 +37,54 @@ app.get("/api/health", (req: Request, res: Response) => {
 	});
 });
 
+// Request logging
+app.use(requestLogger);
+
 // CORS configuration
 app.use(
 	cors({
 		origin: config.cors.origin,
 		methods: config.cors.methods,
-		allowedHeaders: config.cors.allowedHeaders,
 		credentials: true,
-		optionsSuccessStatus: 200,
 	})
 );
 
-// Body parsing middleware
+// Auth routes
+app.all("/api/auth/*splat", toNodeHandler(auth));
+
+// Parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(cookieParser());
 
-// Request logging
-app.use(requestLogger);
+// Rate limiting
+// app.use(rateLimiter);
 
-// Global rate limiting
-app.use(generalRateLimit);
-
-// API routes with specific rate limiting
-app.use("/api/auth", authRateLimit, authRoutes());
-app.use("/api/google", authRateLimit, googleRoutes());
+// API routes
 app.use("/api/user", userRoutes());
 app.use("/api/mentor", mentorRoutes());
 app.use("/api/templates", templateRoutes());
 app.use("/api/resume", resumeRoutes());
-app.use("/api/pdf", pdfRoutes());
-app.use("/api/meetings", meetingRoutes);
 
-// Root route
-app.get("/", (req: Request, res: Response) => {
-	res.status(200).json({
-		success: true,
-		message: "Welcome to the HireMind API",
-		version: "1.0.0",
-		documentation: "/api/docs",
+// Get current session
+app.get("/api/me", async (req, res) => {
+	const session = await auth.api.getSession({
+		headers: fromNodeHeaders(req.headers),
 	});
+	console.log("Session info:", session);
+	return res.json(session);
 });
 
 // Error handling middleware
-app.use(notFoundHandler);
+app.use((req: Request, res: Response) => {
+	res.status(404).json({
+		error: {
+			message: "Route not found",
+			path: req.path,
+		},
+	});
+});
+
 app.use(errorHandler);
 
 export default app;

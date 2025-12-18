@@ -19,7 +19,7 @@ export const mentorResponse = async (req: Request, res: Response): Promise<void>
 		const geminiResponse = await askGemini(message);
 
 		const historyEntry = new History({
-			userId: req.user.userId,
+			userId: req.user.id,
 			message: message,
 			response: geminiResponse,
 		});

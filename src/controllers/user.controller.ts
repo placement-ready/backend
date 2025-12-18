@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
-import { User } from "../models";
-import Profile from "../models/profile";
+import { User } from "../models/";
 
 // Get current user profile
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
@@ -10,19 +9,13 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
 			return;
 		}
 
-		const user = await User.findById(req.user.userId).select("-password");
+		const user = await User.findById(req.user.id).select("-password");
 		if (!user) {
 			res.status(404).json({ error: "User not found" });
 			return;
 		}
 
-		const profile = await Profile.findOne({ userId: user._id });
-		if (!profile) {
-			res.status(404).json({ error: "Profile not found" });
-			return;
-		}
-
-		res.status(200).json({ ...profile });
+		res.status(200).json({ user });
 	} catch (error: any) {
 		console.error("Get profile error:", error);
 		res.status(500).json({ error: "Internal server error while fetching profile" });
@@ -37,36 +30,26 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
 			return;
 		}
 
-		const user = await User.findById(req.user.userId);
+		const user = await User.findById(req.user.id);
 		if (!user) {
 			res.status(404).json({ error: "User not found" });
 			return;
 		}
 
-		// Update user profile fields
-		const { name, image, phone, location, bio, skills, experience, education, projects, achievements } = req.body;
-		user.name = name || user.name;
-		user.profileImage = image || user.profileImage;
+		const { name, email, password } = req.body;
 
-		const profile = await Profile.findByIdAndUpdate(
-			{ userId: user._id },
+		await User.updateOne(
+			{ _id: req.user.id },
 			{
-				image: image,
-				phone: phone,
-				location: location,
-				bio: bio,
-				skills: skills,
-				experience: experience,
-				education: education,
-				projects: projects,
-				achievements: achievements,
-			},
-			{ new: true }
+				$set: {
+					name: name || user.name,
+					email: email || user.email,
+					passwordHash: password ? password : user.passwordHash,
+				},
+			}
 		);
 
-		await user.save();
-
-		res.status(200).json({ message: "Profile updated successfully", profile });
+		res.status(200).json({ message: "Profile updated successfully", user });
 	} catch (error: any) {
 		console.error("Update profile error:", error);
 		res.status(500).json({ error: "Internal server error while updating profile" });
