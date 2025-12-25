@@ -9,7 +9,7 @@ interface ServerConfig {
 }
 
 interface AuthConfig {
-	authSecret: string;
+	secret: string;
 	googleClientId: string;
 	googleClientSecret: string;
 }
@@ -23,23 +23,12 @@ interface DatabaseConfig {
 	uri: string;
 }
 
-interface MailProviderConfig {
-	apiKey: string;
-	from: string;
-}
-
-interface AiConfig {
-	apiKey: string;
-}
-
 interface AppConfig {
 	server: ServerConfig;
 	auth: AuthConfig;
 	cors: CorsOptions;
 	api: ApiConfig;
 	database: DatabaseConfig;
-	mail: MailProviderConfig;
-	ai: AiConfig;
 }
 
 export const config: AppConfig = {
@@ -52,7 +41,7 @@ export const config: AppConfig = {
 
 	// Authentication configuration
 	auth: {
-		authSecret: process.env.AUTH_SECRET || "",
+		secret: process.env.AUTH_SECRET || "",
 		googleClientId: process.env.GOOGLE_CLIENT_ID || "",
 		googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
 	},
@@ -72,17 +61,6 @@ export const config: AppConfig = {
 	// Database configuration
 	database: {
 		uri: process.env.MONGODB_URI || "mongodb://localhost:27017/hiremind",
-	},
-
-	// Mail provider configuration
-	mail: {
-		apiKey: process.env.RESEND_API_KEY || "",
-		from: process.env.EMAIL_FROM || "",
-	},
-
-	// AI configuration
-	ai: {
-		apiKey: process.env.GEMINI_API_KEY || "",
 	},
 };
 

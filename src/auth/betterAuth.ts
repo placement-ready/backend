@@ -1,23 +1,30 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { config } from "../config";
-import { MongoClient } from "mongodb";
+import { getAuthDb } from "../db/mongo";
 
-const client = new MongoClient(config.database.uri);
-const db = client.db();
+let authInstance: ReturnType<typeof betterAuth>;
 
-export const auth = betterAuth({
-	adapter: mongodbAdapter(db, { client }),
-	emailAndPassword: {
-		enabled: true,
-		autoSignIn: true,
-		requireEmailVerification: false,
-	},
-	socialProviders: {
-		google: {
-			clientId: config.auth.googleClientId,
-			clientSecret: config.auth.googleClientSecret,
-		},
-	},
-	trustedOrigins: [config.server.clientUrl || "http://localhost:3000"],
-});
+export function getAuth() {
+	if (!authInstance) {
+		authInstance = betterAuth({
+			appName: "HireMind",
+			secret: config.auth.secret,
+			database: mongodbAdapter(getAuthDb()),
+			emailAndPassword: {
+				enabled: true,
+				autoSignIn: true,
+				requireEmailVerification: false,
+			},
+			socialProviders: {
+				google: {
+					clientId: config.auth.googleClientId,
+					clientSecret: config.auth.googleClientSecret,
+				},
+			},
+			trustedOrigins: [config.server.clientUrl || "http://localhost:3000"],
+		});
+	}
+
+	return authInstance;
+}

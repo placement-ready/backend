@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
 import { ResumeData, ResumeTemplate } from "../models/resume";
-import { ApiResponse } from "../types";
 import { renderResume } from "../utils/renderResume";
 
-function requireUser(req: Request, res: Response<ApiResponse>): { userId: string } | null {
+function requireUser(req: Request, res: Response): { userId: string } | null {
 	const user = req.user;
 	if (!user?.id) {
 		res.status(401).json({ success: false, error: "Authentication required" });
@@ -21,11 +20,7 @@ function toObjectId(value: string) {
 }
 
 // Get all user's resumes
-export const getResume = async (
-	req: Request,
-	res: Response<ApiResponse>,
-	next: NextFunction
-): Promise<void> => {
+export const getResume = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 	try {
 		const auth = requireUser(req, res);
 		if (!auth) return;
@@ -86,7 +81,7 @@ export const getResume = async (
 // Get resume by ID
 export const getResumeById = async (
 	req: Request,
-	res: Response<ApiResponse>,
+	res: Response,
 	next: NextFunction
 ): Promise<void> => {
 	try {
@@ -121,7 +116,7 @@ export const getResumeById = async (
 // Create new resume
 export const createResume = async (
 	req: Request,
-	res: Response<ApiResponse>,
+	res: Response,
 	next: NextFunction
 ): Promise<void> => {
 	try {
@@ -169,7 +164,7 @@ export const createResume = async (
 // Update resume by ID
 export const updateResume = async (
 	req: Request,
-	res: Response<ApiResponse>,
+	res: Response,
 	next: NextFunction
 ): Promise<void> => {
 	try {
@@ -228,7 +223,7 @@ export const updateResume = async (
 // Delete resume by ID
 export const deleteResume = async (
 	req: Request,
-	res: Response<ApiResponse>,
+	res: Response,
 	next: NextFunction
 ): Promise<void> => {
 	try {
@@ -259,7 +254,7 @@ export const deleteResume = async (
 
 export const compileResume = async (
 	req: Request,
-	res: Response<ApiResponse>,
+	res: Response,
 	next: NextFunction
 ): Promise<void> => {
 	try {

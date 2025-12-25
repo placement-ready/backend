@@ -1,8 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../auth/betterAuth";
+import { getAuth } from "../auth/betterAuth";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+	const auth = getAuth();
 	const session = await auth.api.getSession({
 		headers: fromNodeHeaders(req.headers),
 	});

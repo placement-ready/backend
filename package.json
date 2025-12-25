@@ -3,14 +3,14 @@
 		"node": "24.x"
 	},
 	"name": "hiremind-backend",
-	"version": "0.2.0",
+	"version": "2.0.0",
 	"description": "Express server for HireMind application",
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
 		"prestart": "npm run build",
 		"start": "node dist/index.js",
-		"dev": "nodemon --watch 'src/**/*.ts' --exec ts-node --files src/index.ts",
+		"dev": "tsx watch src/index.ts",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],
@@ -18,8 +18,6 @@
 	"license": "ISC",
 	"type": "commonjs",
 	"dependencies": {
-		"@google/genai": "^1.16.0",
-		"bcryptjs": "^3.0.2",
 		"better-auth": "^1.4.7",
 		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.5",
@@ -27,21 +25,16 @@
 		"express": "^5.1.0",
 		"express-async-handler": "^1.2.0",
 		"express-rate-limit": "^8.1.0",
-		"express-validator": "^7.2.1",
 		"handlebars": "^4.7.8",
 		"http-status": "^2.1.0",
 		"mime": "^4.0.7",
 		"mongodb": "^6.21.0",
 		"mongoose": "^8.17.1",
 		"nanoid": "^5.1.6",
-		"puppeteer": "^24.19.0",
-		"resend": "^6.0.1",
 		"socket.io": "^4.8.1",
 		"zod": "^4.1.7"
 	},
 	"devDependencies": {
-		"@types/bcryptjs": "^2.4.6",
-		"@types/compression": "^1.8.1",
 		"@types/cookie-parser": "^1.4.10",
 		"@types/cors": "^2.8.19",
 		"@types/dotenv": "^6.1.1",
