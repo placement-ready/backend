@@ -1,67 +1,55 @@
 import { CorsOptions } from "cors";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-interface ServerConfig {
-	port: number | string;
-	env: string;
-	clientUrl?: string;
+export const isProd = process.env.NODE_ENV === "production";
+
+function requiredEnv(name: string): string {
+	const value = process.env[name];
+	if (!value) {
+		throw new Error(`Missing required environment variable: ${name}`);
+	}
+	return value;
 }
 
-interface AuthConfig {
-	secret: string;
-	googleClientId: string;
-	googleClientSecret: string;
-}
-
-interface ApiConfig {
-	prefix: string;
-	version: string;
-}
-
-interface DatabaseConfig {
-	uri: string;
-}
-
-interface AppConfig {
-	server: ServerConfig;
-	auth: AuthConfig;
-	cors: CorsOptions;
-	api: ApiConfig;
-	database: DatabaseConfig;
-}
-
-export const config: AppConfig = {
-	// Server configuration
+export const config = {
 	server: {
 		port: process.env.PORT || 4000,
 		env: process.env.NODE_ENV || "development",
-		clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
+		clientUrl: isProd
+			? requiredEnv("CLIENT_URL")
+			: process.env.CLIENT_URL || "http://localhost:3000",
 	},
 
-	// Authentication configuration
 	auth: {
-		secret: process.env.AUTH_SECRET || "",
-		googleClientId: process.env.GOOGLE_CLIENT_ID || "",
-		googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+		secret: requiredEnv("AUTH_SECRET"),
+		googleClientId: requiredEnv("GOOGLE_CLIENT_ID"),
+		googleClientSecret: requiredEnv("GOOGLE_CLIENT_SECRET"),
 	},
 
-	// CORS options
 	cors: {
-		origin: process.env.CLIENT_URL || "http://localhost:3000",
-		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-	},
+		origin: (origin, callback) => {
+			const allowed = [config.server.clientUrl];
 
-	// API configuration
+			if (!origin || allowed.includes(origin)) {
+				callback(null, true);
+			} else {
+				callback(new Error("Not allowed by CORS"));
+			}
+		},
+		credentials: true,
+		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+	} satisfies CorsOptions,
+
 	api: {
 		prefix: "/api",
 		version: "v1",
 	},
 
-	// Database configuration
 	database: {
-		uri: process.env.MONGODB_URI || "mongodb://localhost:27017/hiremind",
+		uri: isProd
+			? requiredEnv("MONGODB_URI")
+			: process.env.MONGODB_URI || "mongodb://localhost:27017/hiremind",
 	},
 };
-
-export default config;

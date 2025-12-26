@@ -1,19 +1,29 @@
 import { Request, Response, NextFunction } from "express";
+import { isProd } from "../config";
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
 	const start = Date.now();
 
-	// Log when the request starts
-	console.log(`[${new Date().toLocaleString()}] ${req.method} ${req.url} - Request received`);
-
-	// Log when the response is sent
 	res.on("finish", () => {
 		const duration = Date.now() - start;
-		console.log(
-			`[${new Date().toLocaleString()}] ${req.method} ${req.url} - Response sent - Status: ${
-				res.statusCode
-			} - Duration: ${duration}ms`
-		);
+
+		if (isProd && res.statusCode < 400 && duration < 500) {
+			return;
+		}
+
+		const log = {
+			method: req.method,
+			path: req.originalUrl,
+			status: res.statusCode,
+			duration: `${duration}ms`,
+			ip: req.ip,
+		};
+
+		if (isProd) {
+			console.log(JSON.stringify(log));
+		} else {
+			console.log(`${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`);
+		}
 	});
 
 	next();

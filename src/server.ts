@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { getAuth } from "./auth/betterAuth";
@@ -15,8 +15,10 @@ import { templateRoutes, resumeRoutes } from "./routes";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Root route
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
 	res.status(200).json({
 		success: true,
 		message: "Welcome to the HireMind API",
@@ -24,7 +26,7 @@ app.get("/", (req, res) => {
 });
 
 // Health check route
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (req: Request, res: Response) => {
 	res.status(200).json({
 		success: true,
 		message: "Server is running",
@@ -49,7 +51,7 @@ app.use(
 app.use(rateLimiter);
 
 // Auth routes
-app.all("/api/auth/*any", (req, res) => {
+app.all("/api/auth/*", (req: Request, res: Response) => {
 	return toNodeHandler(getAuth())(req, res);
 });
 
@@ -63,7 +65,7 @@ app.use("/api/templates", templateRoutes());
 app.use("/api/resume", resumeRoutes());
 
 // Get current session
-app.get("/api/me", async (req, res) => {
+app.get("/api/me", async (req: Request, res: Response) => {
 	const auth = getAuth();
 	const session = await auth.api.getSession({
 		headers: fromNodeHeaders(req.headers),
@@ -77,7 +79,7 @@ app.get("/api/me", async (req, res) => {
 });
 
 // Error handling middleware
-app.use((req, res) => {
+app.use((req: Request, res: Response) => {
 	res.status(404).json({
 		error: {
 			message: "Route not found",
