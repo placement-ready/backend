@@ -1,39 +1,83 @@
-import express, { Express, Request, Response, NextFunction } from "express";
-import dotenv from "dotenv";
+import express from "express";
 import cors from "cors";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { getAuth } from "./auth/betterAuth";
+
+// Importing middleware and utilities
+import { requestLogger } from "./utils/logger";
+import { errorHandler } from "./middleware/errorHandler";
+import rateLimiter from "./middleware/rateLimiter";
 import { config } from "./config";
-import { authRoutes } from "./routes/auth.routes";
-import { googleRoutes } from "./routes/google.routes";
-import { userRoutes } from "./routes/user.routes";
-import { requestLogger } from "./middleware";
+import cookieParser from "cookie-parser";
 
-// Load environment variables
-dotenv.config();
+// Importing route handlers
+import { templateRoutes, resumeRoutes } from "./routes";
 
-const app: Express = express();
-
-app.use("/api/health", async (req: Request, res: Response) => {
-	res.status(200).json({ status: "Ok! Server is running" });
-});
-
-// Middleware
-app.use(cors(config.cors));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(requestLogger);
-
-// API routes
-app.use("/api/auth", authRoutes());
-app.use("/api/google", googleRoutes());
-app.use("/api/user", userRoutes());
+const app = express();
 
 // Root route
-app.get("/", (req: Request, res: Response) => {
-	res.status(200).json({ message: "Welcome to the Placement Hub API" });
+app.get("/", (req, res) => {
+	res.status(200).json({
+		success: true,
+		message: "Welcome to the HireMind API",
+	});
 });
 
-// 404 handler for undefined routes
-app.use((req: Request, res: Response, next: NextFunction) => {
+// Health check route
+app.get("/api/health", (req, res) => {
+	res.status(200).json({
+		success: true,
+		message: "Server is running",
+		timestamp: new Date().toISOString(),
+		uptime: process.uptime(),
+	});
+});
+
+// Request logging
+app.use(requestLogger);
+
+// CORS configuration
+app.use(
+	cors({
+		origin: config.cors.origin,
+		methods: config.cors.methods,
+		credentials: true,
+	})
+);
+
+// Rate limiting
+app.use(rateLimiter);
+
+// Auth routes
+app.all("/api/auth/*any", (req, res) => {
+	return toNodeHandler(getAuth())(req, res);
+});
+
+// Parsing middleware
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(cookieParser());
+
+// API routes
+app.use("/api/templates", templateRoutes());
+app.use("/api/resume", resumeRoutes());
+
+// Get current session
+app.get("/api/me", async (req, res) => {
+	const auth = getAuth();
+	const session = await auth.api.getSession({
+		headers: fromNodeHeaders(req.headers),
+	});
+
+	if (!session) {
+		return res.status(401).json({ user: null });
+	}
+
+	return res.json(session);
+});
+
+// Error handling middleware
+app.use((req, res) => {
 	res.status(404).json({
 		error: {
 			message: "Route not found",
@@ -41,5 +85,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 		},
 	});
 });
+
+app.use(errorHandler);
 
 export default app;

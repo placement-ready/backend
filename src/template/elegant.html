@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Elegant Minimal Resume</title>
+  <style>
+    body { font-family: 'Lato', Arial, sans-serif; margin: 38px; color: #212121; background: #f7f7f7; }
+    .header { text-align: center; font-size: 36px; font-weight: 500; margin-bottom: 4px; letter-spacing: 0.05em; }
+    .contact { text-align: center; font-size: 15px; margin-bottom: 24px; color: #555; }
+    .columns { display: flex; gap: 48px; margin-bottom: 36px; }
+    .col { flex: 1; }
+    h2 { font-size: 16px; text-transform: uppercase; font-weight: 700; margin: 24px 0 10px 0; letter-spacing: 0.06em; border-bottom: 1.2px solid #ebebeb; }
+    .section-list { margin: 0 0 18px 0; padding-left: 18px; }
+    .job-title { font-weight: bold; font-size: 15px; }
+    .company { font-size: 14px; color: #444; }
+    .job-details, .edu-details { font-size: 12px; color: #777; margin-bottom: 3px; }
+    .note { font-style: italic; color: #888; }
+    ul, li { margin-bottom: 2px; }
+  </style>
+</head>
+<body>
+  <div class="header">{{fullName}}</div>
+  <div class="contact">{{github}} | {{linkedin}} | {{email}}</div>
+  <div class="columns">
+    <div class="col">
+      <h2>Work Experience</h2>
+      {{#each experience}}
+      <div>
+        <span class="job-title">{{title}}</span> | <span class="company">{{company}}</span><br>
+        <span class="job-details">{{startDate}} - {{endDate}} | {{location}}</span>
+        <ul class="section-list">
+          {{#each bullets}}<li>{{this}}</li>{{/each}}
+        </ul>
+      </div>
+      {{/each}}
+      <h2>Education</h2>
+      {{#each education}}
+      <div>
+        <span class="job-title">{{degree}}</span><br>
+        <span class="company">{{school}}</span><br>
+        <span class="edu-details">{{year}} | {{location}}</span>
+      </div>
+      {{/each}}
+      <h2>Skills</h2>
+      <span class="job-title">Technical Skills</span><br>
+      <ul class="section-list">{{#each techSkills}}<li>{{this}}</li>{{/each}}</ul>
+      <span class="job-title">Soft Skills</span><br>
+      <ul class="section-list">{{#each softSkills}}<li>{{this}}</li>{{/each}}</ul>
+      <h2>Languages</h2>
+      <ul class="section-list">{{#each languages}}<li>{{this}}</li>{{/each}}</ul>
+      <div class="note">{{languageNotes}}</div>
+    </div>
+    <div class="col">
+      <h2>Entrepreneurial Experience</h2>
+      {{#each entrepreneurial}}
+      <div>
+        <span class="job-title">{{title}}</span> | <span class="company">{{company}}</span><br>
+        <span class="job-details">{{startDate}} - {{endDate}} | {{location}}</span>
+        <ul class="section-list">
+          {{#each bullets}}<li>{{this}}</li>{{/each}}
+        </ul>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</body>
+</html>
