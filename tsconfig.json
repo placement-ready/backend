@@ -1,34 +1,25 @@
 {
 	"compilerOptions": {
-		// File Layout
 		"rootDir": "./src",
 		"outDir": "./dist",
 
-		// Environment Settings
 		"module": "commonjs",
 		"target": "es2018",
 		"lib": ["es2018"],
-		"types": ["node"],
-		"moduleResolution": "node10",
 
-		// Other Outputs
+		"moduleResolution": "node",
+
 		"sourceMap": true,
 		"declaration": true,
 		"declarationMap": true,
 
-		// Stricter Typechecking Options
 		"noUncheckedIndexedAccess": true,
 		"exactOptionalPropertyTypes": true,
 
-		// Recommended Options
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
-		"jsx": "react-jsx",
-		"verbatimModuleSyntax": false,
-		"isolatedModules": true,
-		"noUncheckedSideEffectImports": true,
-		"moduleDetection": "force",
+
 		"skipLibCheck": true
 	}
 }
