@@ -1,5 +1,5 @@
 import express from "express";
-import { getTemplates, getTemplateById, searchTemplates } from "../controllers/template.controller";
+import { getTemplates, getTemplateById, searchTemplates } from "../controllers";
 import expressAsyncHandler from "express-async-handler";
 
 const router = express.Router();

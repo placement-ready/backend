@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { createAuthMiddleware } from "better-auth/api";
 import { config } from "../config";
 import { getAuthDb } from "../db/mongo";
 
@@ -23,6 +24,13 @@ export function getAuth() {
 				},
 			},
 			trustedOrigins: [config.server.clientUrl || "http://localhost:3000"],
+			hooks: {
+				after: createAuthMiddleware(async (ctx) => {
+					if (ctx.path.startsWith("/callback")) {
+						throw ctx.redirect(config.server.clientUrl + "/dashboard");
+					}
+				}),
+			},
 		});
 	}
 

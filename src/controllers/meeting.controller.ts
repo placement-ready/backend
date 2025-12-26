@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { nanoid } from "nanoid";
-import { Meeting } from "../models/meeting";
+import { Meeting } from "../models";
 
 // Schedule a new 1:1 meeting
 export const scheduleMeeting = async (req: Request, res: Response): Promise<void> => {

@@ -1,11 +1,11 @@
 import { Router } from "express";
 import {
-  scheduleMeeting,
-  getMeetings,
-  clearAllMeetings,
-  markAsAttended,
-  getAllMeetings,
-} from "../controllers/meeting.controller";
+	scheduleMeeting,
+	getMeetings,
+	clearAllMeetings,
+	markAsAttended,
+	getAllMeetings,
+} from "../controllers";
 
 const router: Router = Router();
 

@@ -6,7 +6,7 @@ import {
 	deleteResume,
 	getResumeById,
 	compileResume,
-} from "../controllers/resume.controller";
+} from "../controllers";
 import { authMiddleware } from "../middleware/auth";
 
 const router = express.Router();

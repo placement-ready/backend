@@ -11,8 +11,7 @@ import { config } from "./config";
 import cookieParser from "cookie-parser";
 
 // Importing route handlers
-import { templateRoutes } from "./routes/template.routes";
-import { resumeRoutes } from "./routes/resume.routes";
+import { templateRoutes, resumeRoutes } from "./routes";
 
 const app = express();
 

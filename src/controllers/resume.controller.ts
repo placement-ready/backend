@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
-import { ResumeData, ResumeTemplate } from "../models/resume";
+import { ResumeData, ResumeTemplate } from "../models";
 import { renderResume } from "../utils/renderResume";
 
 function requireUser(req: Request, res: Response): { userId: string } | null {

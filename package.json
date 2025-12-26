@@ -26,23 +26,16 @@
 		"express-async-handler": "^1.2.0",
 		"express-rate-limit": "^8.1.0",
 		"handlebars": "^4.7.8",
-		"http-status": "^2.1.0",
-		"mime": "^4.0.7",
 		"mongodb": "^6.21.0",
 		"mongoose": "^8.17.1",
 		"nanoid": "^5.1.6",
-		"socket.io": "^4.8.1",
-		"zod": "^4.1.7"
+		"socket.io": "^4.8.1"
 	},
 	"devDependencies": {
 		"@types/cookie-parser": "^1.4.10",
 		"@types/cors": "^2.8.19",
-		"@types/dotenv": "^6.1.1",
 		"@types/express": "^5.0.3",
-		"@types/http-status": "^0.2.30",
 		"@types/node": "^24.10.4",
-		"nodemon": "^3.1.10",
-		"ts-node": "^10.9.2",
 		"tsx": "^4.20.4",
 		"typescript": "^5.9.2"
 	}

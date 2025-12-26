@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ResumeTemplate } from "../models/resume";
+import { ResumeTemplate } from "../models";
 
 // Get all templates with pagination
 export const getTemplates = async (
