@@ -1,15 +1,16 @@
 {
 	"engines": {
-		"node": "20.x"
+		"node": "24.x"
 	},
-	"name": "placement-backend",
-	"version": "1.0.0",
-	"description": "Express server for placement hub",
+	"name": "hiremind-backend",
+	"version": "2.0.0",
+	"description": "Express server for HireMind application",
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
+		"prestart": "npm run build",
 		"start": "node dist/index.js",
-		"dev": "nodemon --watch 'src/**/*.ts' --exec ts-node src/index.ts",
+		"dev": "tsx watch src/index.ts",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],
@@ -17,42 +18,24 @@
 	"license": "ISC",
 	"type": "commonjs",
 	"dependencies": {
-		"@google/genai": "^1.16.0",
-		"bcryptjs": "^3.0.2",
-		"cloudinary": "^2.7.0",
-		"compression": "^1.8.1",
+		"better-auth": "^1.4.7",
+		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.5",
 		"dotenv": "^17.2.1",
 		"express": "^5.1.0",
+		"express-async-handler": "^1.2.0",
 		"express-rate-limit": "^8.1.0",
-		"express-validator": "^7.2.1",
 		"handlebars": "^4.7.8",
-		"helmet": "^8.1.0",
-		"http-status": "^2.1.0",
-		"jsonwebtoken": "^9.0.2",
-		"mime": "^4.0.7",
+		"mongodb": "^6.21.0",
 		"mongoose": "^8.17.1",
-		"morgan": "^1.10.1",
-		"multer": "^2.0.2",
 		"nanoid": "^5.1.6",
-		"puppeteer": "^24.19.0",
-		"resend": "^6.0.1",
-		"socket.io": "^4.8.1",
-		"zod": "^4.1.7"
+		"socket.io": "^4.8.1"
 	},
 	"devDependencies": {
-		"@types/bcryptjs": "^2.4.6",
-		"@types/compression": "^1.8.1",
+		"@types/cookie-parser": "^1.4.10",
 		"@types/cors": "^2.8.19",
-		"@types/dotenv": "^6.1.1",
 		"@types/express": "^5.0.3",
-		"@types/http-status": "^0.2.30",
-		"@types/jsonwebtoken": "^9.0.10",
-		"@types/morgan": "^1.9.10",
-		"@types/multer": "^2.0.0",
-		"@types/node": "^24.3.0",
-		"nodemon": "^3.1.10",
-		"ts-node": "^10.9.2",
+		"@types/node": "^24.10.4",
 		"tsx": "^4.20.4",
 		"typescript": "^5.9.2"
 	}

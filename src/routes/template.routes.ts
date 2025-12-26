@@ -1,15 +1,13 @@
 import express from "express";
-import { getTemplates, getTemplateById, searchTemplates } from "../controllers/template.controller";
-import { validateParams } from "../middleware/validation";
-import { idParamSchema } from "../validations/schemas";
-import { asyncHandler } from "../middleware/errorHandler";
+import { getTemplates, getTemplateById, searchTemplates } from "../controllers";
+import expressAsyncHandler from "express-async-handler";
 
 const router = express.Router();
 
 export const templateRoutes = () => {
-	router.get("/", asyncHandler(getTemplates));
-	router.get("/search", asyncHandler(searchTemplates));
-	router.get("/:id", validateParams(idParamSchema), asyncHandler(getTemplateById));
+	router.get("/", expressAsyncHandler(getTemplates));
+	router.get("/search", expressAsyncHandler(searchTemplates));
+	router.get("/:id", expressAsyncHandler(getTemplateById));
 
 	return router;
 };
