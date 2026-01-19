@@ -11,7 +11,7 @@ import { config } from "./config";
 import cookieParser from "cookie-parser";
 
 // Importing route handlers
-import { templateRoutes, resumeRoutes } from "./routes";
+import { templateRoutes, resumeRoutes, interviewRoutes, skillRoutes, goalRoutes, learningRoutes } from "./routes";
 
 const app = express();
 
@@ -63,6 +63,10 @@ app.use(cookieParser());
 // API routes
 app.use("/api/templates", templateRoutes());
 app.use("/api/resume", resumeRoutes());
+app.use("/api/interviews", interviewRoutes());
+app.use("/api/skills", skillRoutes());
+app.use("/api/goals", goalRoutes());
+app.use("/api/learning", learningRoutes());
 
 // Get current session
 app.get("/api/me", async (req: Request, res: Response) => {
