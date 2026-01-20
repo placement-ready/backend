@@ -17,6 +17,7 @@
 	"license": "ISC",
 	"type": "commonjs",
 	"dependencies": {
+		"@google/genai": "^1.37.0",
 		"better-auth": "^1.4.7",
 		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.5",

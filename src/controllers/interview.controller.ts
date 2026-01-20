@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { nanoid } from "nanoid";
 import { Interview } from "../models";
+import { geminiService, SeniorityLevel, InterviewType } from "../ai/gemini.service";
 
 // Default interview questions by type
 const INTERVIEW_QUESTIONS = {
@@ -36,10 +37,40 @@ export const createInterview = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        const { title, type = "behavioral", duration = 30 } = req.body;
+        const {
+            title,
+            type = "behavioral",
+            duration = 30,
+            jobDescription,
+            seniorityLevel,
+            useAI = false,
+            numberOfQuestions,
+        } = req.body;
 
         const sessionId = nanoid(12);
-        const questions = INTERVIEW_QUESTIONS[type as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.behavioral;
+        let questions: string[] = [];
+        let questionsMetadata: any[] = [];
+        let aiGenerated = false;
+
+        // If useAI is true and we have job context, generate questions with Gemini
+        if (useAI && jobDescription && seniorityLevel && geminiService.isConfigured()) {
+            try {
+                const generatedQuestions = await geminiService.generateQuestions(
+                    jobDescription,
+                    seniorityLevel as SeniorityLevel,
+                    type as InterviewType,
+                    numberOfQuestions
+                );
+                questions = generatedQuestions.map((q) => q.question);
+                questionsMetadata = generatedQuestions;
+                aiGenerated = true;
+            } catch (error) {
+                console.error("AI question generation failed, using defaults:", error);
+                questions = INTERVIEW_QUESTIONS[type as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.behavioral;
+            }
+        } else {
+            questions = INTERVIEW_QUESTIONS[type as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.behavioral;
+        }
 
         const interview = new Interview({
             userId,
@@ -48,9 +79,13 @@ export const createInterview = async (req: Request, res: Response): Promise<void
             type,
             status: "pending",
             questions,
+            questionsMetadata: aiGenerated ? questionsMetadata : undefined,
             currentQuestionIndex: 0,
             duration,
             messages: [],
+            jobDescription,
+            seniorityLevel,
+            aiGenerated,
         });
 
         await interview.save();
@@ -64,8 +99,12 @@ export const createInterview = async (req: Request, res: Response): Promise<void
                 type: interview.type,
                 status: interview.status,
                 questions: interview.questions,
+                questionsMetadata: interview.questionsMetadata,
                 currentQuestionIndex: interview.currentQuestionIndex,
                 duration: interview.duration,
+                jobDescription: interview.jobDescription,
+                seniorityLevel: interview.seniorityLevel,
+                aiGenerated: interview.aiGenerated,
             },
         });
     } catch (error: any) {
@@ -415,6 +454,139 @@ export const getInterviewStats = async (req: Request, res: Response): Promise<vo
         });
     } catch (error: any) {
         console.error("getInterviewStats error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Generate interview questions using Gemini AI
+export const generateQuestions = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const { jobDescription, seniorityLevel, type = "behavioral", numberOfQuestions } = req.body;
+
+        if (!jobDescription || !seniorityLevel) {
+            res.status(400).json({
+                success: false,
+                message: "jobDescription and seniorityLevel are required",
+            });
+            return;
+        }
+
+        if (!geminiService.isConfigured()) {
+            res.status(503).json({
+                success: false,
+                message: "AI service is not configured. Please set GEMINI_API_KEY.",
+            });
+            return;
+        }
+
+        const questions = await geminiService.generateQuestions(
+            jobDescription,
+            seniorityLevel as SeniorityLevel,
+            type as InterviewType,
+            numberOfQuestions
+        );
+
+        res.status(200).json({
+            success: true,
+            questions,
+            metadata: {
+                jobDescription,
+                seniorityLevel,
+                type,
+                count: questions.length,
+                generatedAt: new Date().toISOString(),
+            },
+        });
+    } catch (error: any) {
+        console.error("generateQuestions error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Evaluate interview answers using Gemini AI
+export const evaluateInterview = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const { id } = req.params;
+
+        const interview = await Interview.findOne({ sessionId: id, userId });
+        if (!interview) {
+            res.status(404).json({ success: false, message: "Interview not found" });
+            return;
+        }
+
+        if (interview.status !== "completed" && interview.status !== "in-progress") {
+            res.status(400).json({
+                success: false,
+                message: "Interview must be completed or in-progress to evaluate",
+            });
+            return;
+        }
+
+        if (!geminiService.isConfigured()) {
+            res.status(503).json({
+                success: false,
+                message: "AI service is not configured. Please set GEMINI_API_KEY.",
+            });
+            return;
+        }
+
+        // Extract answers from messages
+        const userMessages = interview.messages.filter((m) => m.role === "user");
+        const answers = userMessages.map((m) => m.content);
+
+        // Use questionsMetadata questions or fallback to simple questions array
+        const questions = interview.questionsMetadata?.map((q) => q.question) || interview.questions;
+
+        if (answers.length === 0) {
+            res.status(400).json({
+                success: false,
+                message: "No answers found to evaluate",
+            });
+            return;
+        }
+
+        const evaluation = await geminiService.evaluateAnswers(
+            questions.slice(0, answers.length), // Only evaluate answered questions
+            answers,
+            interview.jobDescription || `${interview.type} interview`,
+            (interview.seniorityLevel as SeniorityLevel) || "mid"
+        );
+
+        // Update interview with evaluation
+        interview.evaluation = {
+            ...evaluation,
+            evaluatedAt: new Date(),
+        };
+        interview.score = evaluation.overallScore;
+        interview.status = "evaluated";
+        interview.feedback = {
+            strengths: evaluation.strengths,
+            improvements: evaluation.improvements,
+            tips: evaluation.recommendations,
+        };
+
+        await interview.save();
+
+        res.status(200).json({
+            success: true,
+            evaluation: interview.evaluation,
+            score: interview.score,
+            feedback: interview.feedback,
+        });
+    } catch (error: any) {
+        console.error("evaluateInterview error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
