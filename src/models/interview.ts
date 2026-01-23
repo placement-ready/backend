@@ -50,7 +50,7 @@ interface IInterview extends Document {
 	sessionId: string;
 	title: string;
 	type: "behavioral" | "technical" | "case-study";
-	status: "pending" | "in-progress" | "completed" | "evaluated";
+	status: "pending" | "in-progress" | "completed" | "evaluated" | "pending-evaluation";
 	messages: IMessage[];
 	questions: string[];
 	questionsMetadata?: IQuestionMetadata[];
@@ -141,7 +141,7 @@ const interviewSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ["pending", "in-progress", "completed", "evaluated"],
+		enum: ["pending", "in-progress", "completed", "evaluated", "pending-evaluation"],
 		default: "pending",
 	},
 	messages: [messageSchema],

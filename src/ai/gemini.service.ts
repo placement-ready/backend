@@ -7,7 +7,6 @@ import {
 	AI_CONFIG,
 } from "./prompts/interview.prompts";
 
-// Types
 export type SeniorityLevel = "junior" | "mid" | "senior" | "lead" | "principal";
 export type InterviewType = "behavioral" | "technical" | "case-study";
 
@@ -42,7 +41,6 @@ export interface FollowUpResponse {
 	reason: string;
 }
 
-// Safety settings for professional, focused output
 const safetySettings = [
 	{
 		category: HarmCategory.HARM_CATEGORY_HARASSMENT,

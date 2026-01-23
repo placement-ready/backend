@@ -6,23 +6,15 @@ import { getAuthDb } from "../db/mongo";
 
 let authInstance: ReturnType<typeof betterAuth>;
 
-/**
- * Get the cookie domain for cross-subdomain cookies.
- * Returns undefined for localhost to avoid cookie issues in development.
- */
 function getCookieDomain(url: string): string | undefined {
 	const hostname = new URL(url).hostname;
-	// For localhost, don't set a domain - browsers handle this automatically
 	if (hostname === "localhost" || hostname === "127.0.0.1") {
 		return undefined;
 	}
-	// For production, use the root domain with leading dot for subdomain sharing
 	const parts = hostname.split(".");
 	if (parts.length > 2) {
-		// Return last two parts for standard domains (e.g., ".vercel.app")
 		return "." + parts.slice(-2).join(".");
 	}
-	// For simple domains, return with leading dot
 	return "." + hostname;
 }
 
@@ -84,4 +76,3 @@ export function getAuth() {
 
 	return authInstance;
 }
-

@@ -1,16 +1,16 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import {
-    createInterview,
-    getInterviews,
-    getInterview,
-    startInterview,
-    addMessage,
-    nextQuestion,
-    completeInterview,
-    getInterviewStats,
-    generateQuestions,
-    evaluateInterview,
+	createInterview,
+	getInterviews,
+	getInterview,
+	startInterview,
+	addMessage,
+	nextQuestion,
+	completeInterview,
+	getInterviewStats,
+	generateQuestions,
+	evaluateInterview,
 } from "../controllers/interview.controller";
 
 const router = Router();
