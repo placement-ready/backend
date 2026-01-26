@@ -11,7 +11,7 @@ import { config } from "./config";
 import cookieParser from "cookie-parser";
 
 // Importing route handlers
-import { templateRoutes, resumeRoutes, interviewRoutes, skillRoutes, goalRoutes, learningRoutes } from "./routes";
+import { interviewRoutes, skillRoutes, goalRoutes, learningRoutes } from "./routes";
 
 const app = express();
 
@@ -61,8 +61,6 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
 // API routes
-app.use("/api/templates", templateRoutes());
-app.use("/api/resume", resumeRoutes());
 app.use("/api/interviews", interviewRoutes());
 app.use("/api/skills", skillRoutes());
 app.use("/api/goals", goalRoutes());

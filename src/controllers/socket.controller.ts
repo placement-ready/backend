@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import http from "http";
 import { Interview } from "../models";
+import { registerResumeChatHandlers } from "./resumeChat.controller";
 
 interface Connections {
 	[key: string]: string[];
@@ -352,6 +353,9 @@ export const connectToSocket = (server: http.Server): Server => {
 			console.log("User disconnected:", socket.id);
 		});
 	});
+
+	// Register resume chat handlers
+	registerResumeChatHandlers(io);
 
 	return io;
 };
