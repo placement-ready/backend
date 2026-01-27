@@ -11,7 +11,8 @@ import { config } from "./config";
 import cookieParser from "cookie-parser";
 
 // Importing route handlers
-import { interviewRoutes, skillRoutes, goalRoutes, learningRoutes } from "./routes";
+import { interviewRoutes, skillRoutes, goalRoutes, learningRoutes, resumeRoutes } from "./routes";
+import { resumeExportRoutes } from "./routes/resumeExport.routes";
 
 const app = express();
 
@@ -44,7 +45,7 @@ app.use(
 		origin: config.cors.origin,
 		methods: config.cors.methods,
 		credentials: true,
-	})
+	}),
 );
 
 // Rate limiting
@@ -65,6 +66,8 @@ app.use("/api/interviews", interviewRoutes());
 app.use("/api/skills", skillRoutes());
 app.use("/api/goals", goalRoutes());
 app.use("/api/learning", learningRoutes());
+app.use("/api/resume", resumeRoutes());
+app.use("/api/resume-export", resumeExportRoutes());
 
 // Get current session
 app.get("/api/me", async (req: Request, res: Response) => {
