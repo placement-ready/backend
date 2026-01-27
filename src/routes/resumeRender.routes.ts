@@ -21,6 +21,64 @@ function asyncHandler(
 }
 
 /**
+ * Transform database content to template-compatible format
+ */
+function transformContentToTemplateFormat(content: any): ResumeData {
+    const basics = {
+        name: content.personalInfo?.fullName || "",
+        email: content.personalInfo?.email || "",
+        phone: content.personalInfo?.phone || null,
+        linkedin: content.personalInfo?.linkedin || null,
+        linkedinLabel: content.personalInfo?.linkedin ? "LinkedIn" : null,
+        github: content.personalInfo?.github || null,
+        githubLabel: content.personalInfo?.github ? "GitHub" : null,
+        leetcode: content.personalInfo?.website || null,
+        leetcodeLabel: content.personalInfo?.website ? "Portfolio" : null,
+    };
+
+    const education = (content.education || []).map((edu: any) => ({
+        institution: edu.institution || "",
+        degree: edu.field ? `${edu.degree} in ${edu.field}` : edu.degree || "",
+        date: edu.endDate || edu.startDate || "",
+        grade: edu.gpa ? `GPA: ${edu.gpa}` : null,
+    }));
+
+    const skills = content.skills && content.skills.length > 0
+        ? [{ label: "Technical Skills", items: content.skills.join(", ") }]
+        : [];
+
+    const internships = (content.experience || []).map((exp: any) => ({
+        title: `${exp.role} at ${exp.company}`,
+        period: exp.current
+            ? `${exp.startDate} – Present`
+            : `${exp.startDate} – ${exp.endDate || "Present"}`,
+        highlights: exp.highlights || [],
+    }));
+
+    const projects = (content.projects || []).map((proj: any) => ({
+        name: proj.name || "",
+        link: proj.url || null,
+        highlights: proj.highlights || [proj.description].filter(Boolean),
+    }));
+
+    const certifications = (content.certifications || []).map((cert: string) => ({
+        name: cert,
+        period: "",
+    }));
+
+    return {
+        basics,
+        summary: content.summary || "",
+        education,
+        skills,
+        internships,
+        projects,
+        certifications,
+        achievements: content.achievements || [],
+    };
+}
+
+/**
  * POST /api/resume/generate
  * Generate HTML from resume data and cache it
  */
@@ -36,7 +94,6 @@ router.post(
 
         let resumeData: ResumeData;
 
-        // If data is provided, use it; otherwise fetch from database
         if (data) {
             resumeData = data;
         } else {
@@ -46,29 +103,16 @@ router.post(
                 return;
             }
 
-            resumeData = {
-                personalInfo: content.personalInfo || { fullName: "", email: "" },
-                summary: content.summary || "",
-                experience: content.experience || [],
-                education: content.education || [],
-                skills: content.skills || [],
-                projects: content.projects || [],
-                certifications: content.certifications || [],
-                languages: content.languages || [],
-                achievements: content.achievements || [],
-            };
+            resumeData = transformContentToTemplateFormat(content);
         }
 
-        // Validate
         const validation = resumeRenderService.validateData(resumeData);
         if (!validation.valid) {
             res.status(400).json({ error: validation.error });
             return;
         }
 
-        // Render HTML
         resumeRenderService.renderHtml(resumeId, resumeData);
-
         res.json({ status: "generated", resumeId });
     })
 );
@@ -84,7 +128,6 @@ router.get(
 
         let html = resumeRenderService.getCachedHtml(resumeId);
 
-        // If not cached, try to generate from database
         if (!html) {
             const content = await ResumeContent.findOne({ sessionId: resumeId }).lean();
             if (!content) {
@@ -92,18 +135,7 @@ router.get(
                 return;
             }
 
-            const resumeData: ResumeData = {
-                personalInfo: content.personalInfo || { fullName: "", email: "" },
-                summary: content.summary || "",
-                experience: content.experience || [],
-                education: content.education || [],
-                skills: content.skills || [],
-                projects: content.projects || [],
-                certifications: content.certifications || [],
-                languages: content.languages || [],
-                achievements: content.achievements || [],
-            };
-
+            const resumeData = transformContentToTemplateFormat(content);
             html = resumeRenderService.renderHtml(resumeId, resumeData);
         }
 
@@ -121,7 +153,6 @@ router.get(
     asyncHandler(async (req: Request, res: Response) => {
         const { resumeId } = req.params;
 
-        // Check if HTML exists in cache, if not generate it
         let html = resumeRenderService.getCachedHtml(resumeId);
         if (!html) {
             const content = await ResumeContent.findOne({ sessionId: resumeId }).lean();
@@ -130,25 +161,13 @@ router.get(
                 return;
             }
 
-            const resumeData: ResumeData = {
-                personalInfo: content.personalInfo || { fullName: "", email: "" },
-                summary: content.summary || "",
-                experience: content.experience || [],
-                education: content.education || [],
-                skills: content.skills || [],
-                projects: content.projects || [],
-                certifications: content.certifications || [],
-                languages: content.languages || [],
-                achievements: content.achievements || [],
-            };
-
+            const resumeData = transformContentToTemplateFormat(content);
             resumeRenderService.renderHtml(resumeId, resumeData);
         }
 
         try {
             const pdfBuffer = await resumeRenderService.generatePdf(resumeId);
 
-            // Get name for filename
             const content = await ResumeContent.findOne({ sessionId: resumeId }).lean();
             const name = content?.personalInfo?.fullName || "Resume";
             const safeName = name.replace(/[^a-zA-Z0-9]/g, "_");
@@ -167,3 +186,4 @@ router.get(
 );
 
 export const resumeRenderRoutes = () => router;
+

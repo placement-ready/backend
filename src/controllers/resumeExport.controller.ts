@@ -8,6 +8,71 @@ import { ResumeContent } from "../models";
 import { resumeRenderService, ResumeData } from "../services/resumeRender.service";
 
 /**
+ * Transform database content to template-compatible format
+ */
+function transformContentToTemplateFormat(content: any): ResumeData {
+	// Transform personalInfo to basics
+	const basics = {
+		name: content.personalInfo?.fullName || "",
+		email: content.personalInfo?.email || "",
+		phone: content.personalInfo?.phone || null,
+		linkedin: content.personalInfo?.linkedin || null,
+		linkedinLabel: content.personalInfo?.linkedin ? "LinkedIn" : null,
+		github: content.personalInfo?.github || null,
+		githubLabel: content.personalInfo?.github ? "GitHub" : null,
+		leetcode: content.personalInfo?.website || null,
+		leetcodeLabel: content.personalInfo?.website ? "Portfolio" : null,
+	};
+
+	// Transform education (add date field from startDate/endDate)
+	const education = (content.education || []).map((edu: any) => ({
+		institution: edu.institution || "",
+		degree: edu.field ? `${edu.degree} in ${edu.field}` : edu.degree || "",
+		date: edu.endDate || edu.startDate || "",
+		grade: edu.gpa ? `GPA: ${edu.gpa}` : null,
+	}));
+
+	// Transform skills array to {label, items} format
+	// Group all skills under one category for now
+	const skills = content.skills && content.skills.length > 0
+		? [{ label: "Technical Skills", items: content.skills.join(", ") }]
+		: [];
+
+	// Transform experience to internships format
+	const internships = (content.experience || []).map((exp: any) => ({
+		title: `${exp.role} at ${exp.company}`,
+		period: exp.current
+			? `${exp.startDate} – Present`
+			: `${exp.startDate} – ${exp.endDate || "Present"}`,
+		highlights: exp.highlights || [],
+	}));
+
+	// Transform projects
+	const projects = (content.projects || []).map((proj: any) => ({
+		name: proj.name || "",
+		link: proj.url || null,
+		highlights: proj.highlights || [proj.description].filter(Boolean),
+	}));
+
+	// Transform certifications
+	const certifications = (content.certifications || []).map((cert: string) => ({
+		name: cert,
+		period: "",
+	}));
+
+	return {
+		basics,
+		summary: content.summary || "",
+		education,
+		skills,
+		internships,
+		projects,
+		certifications,
+		achievements: content.achievements || [],
+	};
+}
+
+/**
  * Generate HTML from resume data and cache it
  */
 export async function generateResumeHtml(req: Request, res: Response): Promise<void> {
@@ -29,17 +94,7 @@ export async function generateResumeHtml(req: Request, res: Response): Promise<v
 			return;
 		}
 
-		resumeData = {
-			personalInfo: content.personalInfo || { fullName: "", email: "" },
-			summary: content.summary || "",
-			experience: content.experience || [],
-			education: content.education || [],
-			skills: content.skills || [],
-			projects: content.projects || [],
-			certifications: content.certifications || [],
-			languages: content.languages || [],
-			achievements: content.achievements || [],
-		};
+		resumeData = transformContentToTemplateFormat(content);
 	}
 
 	const validation = resumeRenderService.validateData(resumeData);
@@ -67,18 +122,7 @@ export async function previewResume(req: Request, res: Response): Promise<void> 
 			return;
 		}
 
-		const resumeData: ResumeData = {
-			personalInfo: content.personalInfo || { fullName: "", email: "" },
-			summary: content.summary || "",
-			experience: content.experience || [],
-			education: content.education || [],
-			skills: content.skills || [],
-			projects: content.projects || [],
-			certifications: content.certifications || [],
-			languages: content.languages || [],
-			achievements: content.achievements || [],
-		};
-
+		const resumeData = transformContentToTemplateFormat(content);
 		html = resumeRenderService.renderHtml(resumeId, resumeData);
 	}
 
@@ -100,18 +144,7 @@ export async function downloadResumePdf(req: Request, res: Response): Promise<vo
 			return;
 		}
 
-		const resumeData: ResumeData = {
-			personalInfo: content.personalInfo || { fullName: "", email: "" },
-			summary: content.summary || "",
-			experience: content.experience || [],
-			education: content.education || [],
-			skills: content.skills || [],
-			projects: content.projects || [],
-			certifications: content.certifications || [],
-			languages: content.languages || [],
-			achievements: content.achievements || [],
-		};
-
+		const resumeData = transformContentToTemplateFormat(content);
 		resumeRenderService.renderHtml(resumeId, resumeData);
 	}
 
@@ -130,3 +163,4 @@ export async function downloadResumePdf(req: Request, res: Response): Promise<vo
 		res.status(500).json({ error: "Failed to generate PDF" });
 	}
 }
+

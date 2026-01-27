@@ -1,0 +1,244 @@
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>{{basics.name}} – Resume</title>
+
+		<style>
+			@page {
+				size: letter;
+				margin: 0;
+			}
+
+			body {
+				font-family: "Latin Modern Roman", "Computer Modern", "Times New Roman", serif;
+				font-size: 10pt;
+				line-height: 1.2;
+				margin: 0;
+				color: #000;
+			}
+
+			.page {
+				width: 8.5in;
+				min-height: 11in;
+				padding: 1.2cm 1.5cm;
+				margin: auto;
+			}
+
+			/* Header */
+			.header {
+				text-align: center;
+				line-height: 1.5;
+			}
+
+			.header h1 {
+				font-size: 24pt;
+				margin: 0;
+				font-weight: bold;
+			}
+
+			.contact {
+				margin-top: 0.2cm;
+				font-size: 10pt;
+			}
+
+			.contact a {
+				color: black;
+				text-decoration: underline;
+				margin: 0 4px;
+				white-space: nowrap;
+			}
+
+			/* Sections */
+			section {
+				margin-top: 0.3cm;
+				break-inside: avoid;
+				page-break-inside: avoid;
+			}
+
+			section h2 {
+				font-size: 14pt;
+				font-weight: bold;
+				border-bottom: 1px solid black;
+				margin: 0 0 0.2cm 0;
+			}
+
+			.one-col {
+				margin-left: 0.2cm;
+			}
+
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr auto;
+				gap: 10px;
+				margin-left: 0.2cm;
+			}
+
+			.right {
+				text-align: right;
+				font-style: italic;
+				white-space: nowrap;
+			}
+
+			ul {
+				margin: 0.1cm 0 0.2cm 0.6cm;
+				padding: 0;
+				list-style-type: circle;
+			}
+
+			li {
+				margin-bottom: 2px;
+			}
+
+			.bold {
+				font-weight: bold;
+			}
+			.italic {
+				font-style: italic;
+			}
+		</style>
+	</head>
+
+	<body>
+		<main class="page">
+
+			<!-- HEADER -->
+			{{#if basics}}
+				<header class="header">
+					<h1>{{basics.name}}</h1>
+
+					<div class="contact">
+						{{#if basics.email}}
+							<a href="mailto:{{basics.email}}">{{basics.email}}</a>
+						{{/if}}
+
+						{{#if basics.phone}}
+							|
+							<a href="tel:{{basics.phone}}">{{basics.phone}}</a>
+						{{/if}}
+
+						{{#if basics.leetcode}}
+							|
+							<a href="{{basics.leetcode}}">{{basics.leetcodeLabel}}</a>
+						{{/if}}
+
+						{{#if basics.linkedin}}
+							|
+							<a href="{{basics.linkedin}}">{{basics.linkedinLabel}}</a>
+						{{/if}}
+
+						{{#if basics.github}}
+							|
+							<a href="{{basics.github}}">{{basics.githubLabel}}</a>
+						{{/if}}
+					</div>
+				</header>
+			{{/if}}
+
+			<!-- SUMMARY -->
+			{{#if summary}}
+				<section>
+					<h2>Summary</h2>
+					<div class="one-col">{{summary}}</div>
+				</section>
+			{{/if}}
+
+			<!-- EDUCATION -->
+			{{#if education.length}}
+				<section>
+					<h2>Education</h2>
+					{{#each education}}
+						<div class="two-col">
+							<div class="bold">{{institution}}</div>
+							<div class="right">{{date}}</div>
+						</div>
+						<div class="two-col">
+							<div class="italic">{{degree}}</div>
+							<div class="right">{{grade}}</div>
+						</div>
+					{{/each}}
+				</section>
+			{{/if}}
+
+			<!-- SKILLS -->
+			{{#if skills.length}}
+				<section>
+					<h2>Skills</h2>
+					{{#each skills}}
+						<div class="one-col">
+							<span class="bold">{{label}}:</span>
+							{{items}}
+						</div>
+					{{/each}}
+				</section>
+			{{/if}}
+
+			<!-- INTERNSHIPS -->
+			{{#if internships.length}}
+				<section>
+					<h2>Internship</h2>
+					{{#each internships}}
+						<div class="two-col">
+							<div class="bold">{{title}}</div>
+							<div class="right">{{period}}</div>
+						</div>
+						{{#if highlights.length}}
+							<ul>
+								{{#each highlights}}
+									<li>{{this}}</li>
+								{{/each}}
+							</ul>
+						{{/if}}
+					{{/each}}
+				</section>
+			{{/if}}
+
+			<!-- PROJECTS -->
+			{{#if projects.length}}
+				<section>
+					<h2>Projects</h2>
+					{{#each projects}}
+						<div class="two-col">
+							<div class="bold">{{name}}</div>
+							{{#if link}}
+								<div class="right"><a href="{{link}}">Link</a></div>
+							{{/if}}
+						</div>
+						{{#if highlights.length}}
+							<ul>
+								{{#each highlights}}
+									<li>{{this}}</li>
+								{{/each}}
+							</ul>
+						{{/if}}
+					{{/each}}
+				</section>
+			{{/if}}
+
+			<!-- CERTIFICATIONS -->
+			{{#if certifications.length}}
+				<section>
+					<h2>Certifications</h2>
+					{{#each certifications}}
+						<div class="two-col">
+							<div class="bold">{{name}}</div>
+							<div class="right">{{period}}</div>
+						</div>
+					{{/each}}
+				</section>
+			{{/if}}
+
+			<!-- ACHIEVEMENTS -->
+			{{#if achievements.length}}
+				<section>
+					<h2>Achievements</h2>
+					<ul>
+						{{#each achievements}}
+							<li>{{this}}</li>
+						{{/each}}
+					</ul>
+				</section>
+			{{/if}}
+
+		</main>
+	</body>
+</html>

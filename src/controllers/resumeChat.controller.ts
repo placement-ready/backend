@@ -238,9 +238,9 @@ export function registerResumeChatHandlers(io: Server): void {
                             timestamp: new Date(),
                         });
 
-                        // Check completion status and update session info
+                        // Analyze conversation and update progress based on sections discussed
+                        const updatedSession = await resumeChatService.analyzeAndUpdateProgress(sessionId);
                         const completion = await resumeChatService.checkCompletion(sessionId);
-                        const updatedSession = await resumeChatService.getSession(sessionId);
 
                         io.to(`resume:${sessionId}`).emit("resume:sessionUpdate", {
                             status: updatedSession?.status,

@@ -299,17 +299,48 @@ export const RESUME_AI_CONFIG = {
     temperature: {
         conversation: 0.4,
         jsonGeneration: 0.1, // Very low for deterministic JSON output
+        progressDetection: 0.0, // Zero for deterministic analysis
     },
 
     // Token limits per response type
     maxOutputTokens: {
         conversation: 1024,
         jsonGeneration: 4096,
+        progressDetection: 256,
     },
 
     // Safety threshold
     safetyThreshold: "BLOCK_MEDIUM_AND_ABOVE",
 };
+
+// ============================================================
+// PROGRESS DETECTION PROMPT
+// Used to analyze conversation and detect which sections have data
+// ============================================================
+
+export const PROGRESS_DETECTION_PROMPT = `You are a resume data analyzer. Analyze the conversation and determine which resume sections have enough data.
+
+For each section, output ONLY "yes" or "no" based on whether sufficient data exists:
+
+- personalInfo: Has at least name provided
+- summary: Has any professional summary or objective text
+- experience: Has at least one work experience entry (company, role, dates)
+- education: Has at least one education entry (school, degree)
+- skills: Has at least 2-3 skills listed
+
+Optional sections (mark "yes" if ANY data exists):
+- projects: Has any project mentioned
+- certifications: Has any certification mentioned
+- languages: Has any language proficiency mentioned
+- achievements: Has any achievement/award mentioned
+
+OUTPUT FORMAT (JSON only, no other text):
+{"personalInfo":"yes","summary":"no","experience":"yes","education":"no","skills":"yes","projects":"no","certifications":"no","languages":"no","achievements":"no"}
+
+RULES:
+1. Output ONLY the JSON, no explanations
+2. Be generous - if the data exists in the conversation, mark "yes"
+3. Focus on whether data EXISTS, not whether it's complete or polished`;
 
 // ============================================================
 // VALIDATION MESSAGES

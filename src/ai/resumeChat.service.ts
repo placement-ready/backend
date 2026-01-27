@@ -12,6 +12,7 @@ import {
     RESUME_AI_CONFIG,
     REFINEMENT_MODE_PROMPT,
     JD_ALIGNMENT_PROMPT,
+    PROGRESS_DETECTION_PROMPT,
 } from "./prompts/resume.prompts";
 import {
     ResumeContent,
@@ -673,6 +674,112 @@ class ResumeChatService {
             }
         }
         return result;
+    }
+
+    /**
+     * Analyze conversation and update progress based on what sections have data
+     * This is called after each AI response to keep progress in sync
+     */
+    async analyzeAndUpdateProgress(sessionId: string): Promise<SessionInfo | null> {
+        try {
+            const client = this.getClient();
+            const metadata = await ResumeMetadata.findOne({ sessionId });
+            if (!metadata) return null;
+
+            // Get conversation history
+            const messages = await ResumeChatMessage.find({ sessionId })
+                .sort({ timestamp: 1 })
+                .lean();
+
+            // Need at least user messages to analyze
+            const userMessages = messages.filter(m => m.role === "user");
+            if (userMessages.length === 0) {
+                return this.getSession(sessionId);
+            }
+
+            const conversationText = messages
+                .filter((m) => m.role !== "system")
+                .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+                .join("\n\n");
+
+            // Use AI to detect which sections have data
+            const response = await client.models.generateContent({
+                model: config.gemini.model,
+                contents: `Analyze this resume conversation:\n\n${conversationText}`,
+                config: {
+                    systemInstruction: PROGRESS_DETECTION_PROMPT,
+                    safetySettings,
+                    temperature: RESUME_AI_CONFIG.temperature.progressDetection,
+                    maxOutputTokens: RESUME_AI_CONFIG.maxOutputTokens.progressDetection,
+                },
+            });
+
+            const responseText = (response.text || "").trim();
+
+            // Parse JSON response
+            let progressData: Record<string, string>;
+            try {
+                let cleanText = responseText;
+                if (cleanText.startsWith("```json")) {
+                    cleanText = cleanText.slice(7);
+                } else if (cleanText.startsWith("```")) {
+                    cleanText = cleanText.slice(3);
+                }
+                if (cleanText.endsWith("```")) {
+                    cleanText = cleanText.slice(0, -3);
+                }
+                progressData = JSON.parse(cleanText.trim());
+            } catch (error) {
+                console.error("Failed to parse progress JSON:", responseText);
+                return this.getSession(sessionId);
+            }
+
+            // Convert to completed sections array
+            const allSections: ResumeSection[] = [
+                "personalInfo", "summary", "experience", "education", "skills",
+                "projects", "certifications", "languages", "achievements"
+            ];
+
+            const completedSections = allSections.filter(
+                section => progressData[section] === "yes"
+            );
+
+            // Determine current section (first incomplete required section, or first optional)
+            const REQUIRED: ResumeSection[] = ["personalInfo", "summary", "experience", "education", "skills"];
+            let currentSection: ResumeSection = "personalInfo";
+
+            for (const section of REQUIRED) {
+                if (!completedSections.includes(section)) {
+                    currentSection = section;
+                    break;
+                }
+            }
+
+            // If all required complete, move to optional or mark reviewing
+            const allRequiredComplete = REQUIRED.every(s => completedSections.includes(s));
+
+            // Update content in DB
+            await ResumeContent.updateOne(
+                { sessionId },
+                {
+                    $set: {
+                        completedSections,
+                        currentSection,
+                        isComplete: allRequiredComplete,
+                    },
+                }
+            );
+
+            // Update metadata status if all required complete
+            if (allRequiredComplete) {
+                await ResumeMetadata.updateOne({ sessionId }, { status: "reviewing" });
+            }
+
+            return this.getSession(sessionId);
+        } catch (error) {
+            console.error("Error analyzing progress:", error);
+            return this.getSession(sessionId);
+        }
     }
 }
 
