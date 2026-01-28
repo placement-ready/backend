@@ -716,10 +716,12 @@ class ResumeChatService {
 
             const responseText = (response.text || "").trim();
 
-            // Parse JSON response
+            // Parse JSON response - try multiple extraction strategies
             let progressData: Record<string, string>;
             try {
                 let cleanText = responseText;
+
+                // Remove markdown code blocks
                 if (cleanText.startsWith("```json")) {
                     cleanText = cleanText.slice(7);
                 } else if (cleanText.startsWith("```")) {
@@ -728,9 +730,30 @@ class ResumeChatService {
                 if (cleanText.endsWith("```")) {
                     cleanText = cleanText.slice(0, -3);
                 }
-                progressData = JSON.parse(cleanText.trim());
+                cleanText = cleanText.trim();
+
+                // Try direct parse first
+                try {
+                    progressData = JSON.parse(cleanText);
+                } catch {
+                    // Try to extract JSON from text (AI sometimes adds explanation)
+                    const jsonMatch = cleanText.match(/\{[\s\S]*?\}/);
+                    if (jsonMatch) {
+                        progressData = JSON.parse(jsonMatch[0]);
+                    } else {
+                        throw new Error("No JSON found in response");
+                    }
+                }
+
+                // Validate that progressData has the expected structure
+                const expectedKeys = ["personalInfo", "summary", "experience", "education", "skills"];
+                const hasExpectedKeys = expectedKeys.some(key => key in progressData);
+                if (!hasExpectedKeys) {
+                    throw new Error("Invalid progress data structure");
+                }
             } catch (error) {
-                console.error("Failed to parse progress JSON:", responseText);
+                console.warn("Failed to parse progress JSON, using fallback:", responseText.substring(0, 200));
+                // Fallback: return current session state without updates
                 return this.getSession(sessionId);
             }
 

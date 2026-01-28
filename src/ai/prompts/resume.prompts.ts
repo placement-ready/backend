@@ -8,69 +8,43 @@
 // Guides the AI to collect resume data incrementally
 // ============================================================
 
-export const RESUME_BUILDER_SYSTEM_PROMPT = `You are a resume generation assistant. Your job is to parse user input and generate resumes with ZERO friction.
+export const RESUME_BUILDER_SYSTEM_PROMPT = `You are a resume generation assistant. Your job is to turn user-provided information into a clean, professional resume with minimal friction.
 
 ## CORE BEHAVIOR
 
-### INPUT INGESTION (Silent)
-When user sends content:
-1. **PARSE SILENTLY** - Identify all sections in their input:
-   - Personal Info (name, email, phone, location, links)
-   - Summary/Objective
-   - Skills
-   - Work Experience
-   - Projects
-   - Education
-   - Certifications
-2. **STORE EVERYTHING** - Never discard any user-provided data
-3. **DO NOT CONFIRM** - No "Is this correct?" or "Let me summarize..."
-4. **DO NOT EXPLAIN** - No meta-commentary about what you're doing
+### INPUT HANDLING
+- Parse all resume-related information the user provides (personal info, summary, skills, experience, projects, education, certifications).
+- Do not discard user data.
+- Do not explain your process or repeat the user’s input.
 
-### CRITICAL MISSING CHECK (One-Time Only)
-ONLY ask if these are COMPLETELY missing:
-- **Name** - Cannot generate without a name
-- **Experience OR Projects** - Need at least one (not both required)
-- **Education** - Need at least one entry
+### MINIMUM REQUIREMENTS CHECK
+Only check for the following before generating:
+- Name
+- At least one of: Work Experience or Projects
+- At least one Education entry
 
-If any critical item is missing:
-- Ask for it in ONE short message
-- Do NOT ask for confirmation after they provide it
+If any of these are missing:
+- Ask for what’s missing in a single short message.
+- Do not ask follow-up or confirmation questions.
 
-If nothing critical is missing:
-- **GENERATE IMMEDIATELY** - Do not ask more questions
+### GENERATION
+When minimum requirements are met:
+- Respond with: **“Generating your resume now…”**
+- Proceed directly to resume generation.
 
-### WHAT NOT TO DO
-❌ Never ask "Is this correct?"
-❌ Never ask "Would you like to add more?"
-❌ Never ask "Can you confirm...?"
-❌ Never explain your parsing process
-❌ Never validate section quality
-❌ Never suggest improvements unless asked
-❌ Never ask step-by-step questions
-❌ Never provide a summary before generating
-
-### GENERATION MODE
-When you have enough info (name + experience/projects + education):
-1. Respond with: "Generating your resume now..."
-2. The system will handle the actual generation
-
-### USER EDITS
-If user explicitly asks to change something:
-- Apply the change silently
-- Do not ask for confirmation
-- If they want to regenerate, just do it
+### USER CHANGES
+- If the user asks to modify or update something, apply it directly.
+- Do not ask for confirmation or suggest additional changes unless requested.
 
 ### GREETING (First Message Only)
-When conversation starts, say:
-"Paste your resume info below and I'll create your resume. Include whatever you have: work experience, education, skills, projects."
+Say:
+“Paste your resume info below and I’ll create your resume. Include whatever you have.”
 
-That's it. No lengthy explanation.
-
-## REMEMBER
-- Speed over thoroughness
-- User control over AI guidance  
-- Zero friction
-- Parse → Check critical → Generate`;
+## GUIDING PRINCIPLES
+- Be fast and direct
+- Avoid unnecessary questions
+- Avoid meta commentary
+- Generate when possible`;
 
 // ============================================================
 // REFINEMENT MODE PROMPT EXTENSION
@@ -121,7 +95,7 @@ The goal is to present the user's actual qualifications in the best light for th
 // ============================================================
 
 export const SECTION_PROMPTS: Record<string, string> = {
-    personalInfo: `Now collecting: **Personal Information**
+	personalInfo: `Now collecting: **Personal Information**
 
 I'll need the following:
 - Full name (required)
@@ -134,7 +108,7 @@ I'll need the following:
 
 Let's start with your full name as you'd like it to appear on your resume.`,
 
-    summary: `Now collecting: **Professional Summary**
+	summary: `Now collecting: **Professional Summary**
 
 This is a brief 2-3 sentence overview of your professional background, key skills, and career goals. 
 
@@ -142,7 +116,7 @@ A good summary might be: "Results-driven software engineer with 5+ years of expe
 
 What would you like your professional summary to say?`,
 
-    experience: `Now collecting: **Work Experience**
+	experience: `Now collecting: **Work Experience**
 
 For each position, I'll need:
 - Company name
@@ -154,7 +128,7 @@ For each position, I'll need:
 
 Let's start with your most recent position. What company did/do you work for?`,
 
-    education: `Now collecting: **Education**
+	education: `Now collecting: **Education**
 
 For each entry, I'll need:
 - Institution name
@@ -166,7 +140,7 @@ For each entry, I'll need:
 
 Let's start with your highest level of education. What institution did you attend?`,
 
-    skills: `Now collecting: **Skills**
+	skills: `Now collecting: **Skills**
 
 List your technical skills, soft skills, tools, and technologies you're proficient in.
 
@@ -178,7 +152,7 @@ Examples might include:
 
 What skills would you like to highlight on your resume?`,
 
-    projects: `Now collecting: **Projects** (Optional)
+	projects: `Now collecting: **Projects** (Optional)
 
 Would you like to add any notable projects? These could be personal projects, open-source contributions, or significant professional projects.
 
@@ -191,7 +165,7 @@ For each project, I'll need:
 
 Do you have any projects you'd like to include?`,
 
-    certifications: `Now collecting: **Certifications** (Optional)
+	certifications: `Now collecting: **Certifications** (Optional)
 
 Would you like to add any professional certifications? Examples include:
 - AWS Certified Solutions Architect
@@ -201,13 +175,13 @@ Would you like to add any professional certifications? Examples include:
 
 Do you have any certifications to include?`,
 
-    languages: `Now collecting: **Languages** (Optional)
+	languages: `Now collecting: **Languages** (Optional)
 
 Would you like to list any languages you speak? Include your proficiency level if you'd like (e.g., "Spanish - Fluent", "French - Intermediate").
 
 Do you have additional languages to include?`,
 
-    achievements: `Now collecting: **Achievements** (Optional)
+	achievements: `Now collecting: **Achievements** (Optional)
 
 Would you like to highlight any notable achievements or awards? These might include:
 - Industry awards
@@ -295,22 +269,22 @@ You MUST output ONLY a valid JSON object with NO additional text, explanations, 
 // ============================================================
 
 export const RESUME_AI_CONFIG = {
-    // Low temperature for consistent, focused responses
-    temperature: {
-        conversation: 0.4,
-        jsonGeneration: 0.1, // Very low for deterministic JSON output
-        progressDetection: 0.0, // Zero for deterministic analysis
-    },
+	// Low temperature for consistent, focused responses
+	temperature: {
+		conversation: 0.4,
+		jsonGeneration: 0.1, // Very low for deterministic JSON output
+		progressDetection: 0.0, // Zero for deterministic analysis
+	},
 
-    // Token limits per response type
-    maxOutputTokens: {
-        conversation: 1024,
-        jsonGeneration: 4096,
-        progressDetection: 256,
-    },
+	// Token limits per response type
+	maxOutputTokens: {
+		conversation: 1024,
+		jsonGeneration: 4096,
+		progressDetection: 256,
+	},
 
-    // Safety threshold
-    safetyThreshold: "BLOCK_MEDIUM_AND_ABOVE",
+	// Safety threshold
+	safetyThreshold: "BLOCK_MEDIUM_AND_ABOVE",
 };
 
 // ============================================================
@@ -347,30 +321,29 @@ RULES:
 // ============================================================
 
 export const VALIDATION_MESSAGES = {
-    personalInfo: {
-        missingName: "I'll need your full name to continue. What name would you like on your resume?",
-        missingEmail:
-            "An email address is essential for employers to contact you. What email should I use?",
-        invalidEmail: "That doesn't look like a valid email address. Could you double-check it?",
-    },
-    summary: {
-        tooShort:
-            "Your summary seems a bit brief. Could you expand it to 2-3 sentences that highlight your key strengths?",
-    },
-    experience: {
-        missingCompany: "I need the company name for this position. Where did you work?",
-        missingRole: "What was your job title at this company?",
-        missingDates: "When did you work there? Please provide at least a start date.",
-        missingDescription:
-            "Could you briefly describe your responsibilities in this role?",
-    },
-    education: {
-        missingInstitution: "What school or institution did you attend?",
-        missingDegree:
-            "What degree or qualification did you earn? (e.g., Bachelor's in Computer Science)",
-    },
-    skills: {
-        tooFew:
-            "Having at least 3-5 skills helps employers understand your capabilities. Can you add a few more?",
-    },
+	personalInfo: {
+		missingName: "I'll need your full name to continue. What name would you like on your resume?",
+		missingEmail:
+			"An email address is essential for employers to contact you. What email should I use?",
+		invalidEmail: "That doesn't look like a valid email address. Could you double-check it?",
+	},
+	summary: {
+		tooShort:
+			"Your summary seems a bit brief. Could you expand it to 2-3 sentences that highlight your key strengths?",
+	},
+	experience: {
+		missingCompany: "I need the company name for this position. Where did you work?",
+		missingRole: "What was your job title at this company?",
+		missingDates: "When did you work there? Please provide at least a start date.",
+		missingDescription: "Could you briefly describe your responsibilities in this role?",
+	},
+	education: {
+		missingInstitution: "What school or institution did you attend?",
+		missingDegree:
+			"What degree or qualification did you earn? (e.g., Bachelor's in Computer Science)",
+	},
+	skills: {
+		tooFew:
+			"Having at least 3-5 skills helps employers understand your capabilities. Can you add a few more?",
+	},
 };

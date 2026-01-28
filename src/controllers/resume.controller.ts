@@ -142,12 +142,16 @@ export const getRecentResumes = async (req: Request, res: Response): Promise<voi
 		const resumesWithProgress = await Promise.all(
 			resumes.map(async (resume) => {
 				const progress = await getResumeProgress(resume.sessionId);
+				// Fetch content to get completedSections and currentSection
+				const content = await ResumeContent.findOne({ sessionId: resume.sessionId }).lean();
 				return {
 					id: resume._id,
 					sessionId: resume.sessionId,
 					title: resume.title || "Untitled Resume",
 					status: resume.status,
 					progress,
+					completedSections: content?.completedSections || [],
+					currentSection: content?.currentSection || "personalInfo",
 					targetRole: resume.targetRole,
 					createdAt: resume.createdAt,
 					updatedAt: resume.updatedAt,
