@@ -261,8 +261,9 @@ You MUST output ONLY a valid JSON object with NO additional text, explanations, 
 3. Use empty arrays [] for optional array fields with no entries
 4. Ensure all dates are formatted consistently (e.g., "Jan 2020", "2020", "Present")
 5. Do NOT add, embellish, or infer any information
-6. Do NOT include any text outside the JSON object
-7. The output must be valid, parseable JSON`;
+6. Do NOT include any text outside the JSON object (no markdown, no code block wrappers, no distinct explanations)
+7. Do NOT include comments within the JSON (standard JSON does not support comments)
+8. The output must be valid, parseable JSON`;
 
 // ============================================================
 // AI CONFIGURATION
@@ -292,24 +293,24 @@ export const RESUME_AI_CONFIG = {
 // Used to analyze conversation and detect which sections have data
 // ============================================================
 
-export const PROGRESS_DETECTION_PROMPT = `You are a resume data analyzer. Analyze the conversation and determine which resume sections have enough data.
+export const PROGRESS_DETECTION_PROMPT = `You are a resume data analyzer.Analyze the conversation and determine which resume sections have enough data.
 
 For each section, output ONLY "yes" or "no" based on whether sufficient data exists:
 
 - personalInfo: Has at least name provided
-- summary: Has any professional summary or objective text
-- experience: Has at least one work experience entry (company, role, dates)
-- education: Has at least one education entry (school, degree)
-- skills: Has at least 2-3 skills listed
+	- summary: Has any professional summary or objective text
+		- experience: Has at least one work experience entry(company, role, dates)
+			- education: Has at least one education entry(school, degree)
+				- skills: Has at least 2 - 3 skills listed
 
-Optional sections (mark "yes" if ANY data exists):
+Optional sections(mark "yes" if ANY data exists):
 - projects: Has any project mentioned
-- certifications: Has any certification mentioned
-- languages: Has any language proficiency mentioned
-- achievements: Has any achievement/award mentioned
+	- certifications: Has any certification mentioned
+		- languages: Has any language proficiency mentioned
+			- achievements: Has any achievement / award mentioned
 
-OUTPUT FORMAT (JSON only, no other text):
-{"personalInfo":"yes","summary":"no","experience":"yes","education":"no","skills":"yes","projects":"no","certifications":"no","languages":"no","achievements":"no"}
+OUTPUT FORMAT(JSON only, no other text):
+{ "personalInfo": "yes", "summary": "no", "experience": "yes", "education": "no", "skills": "yes", "projects": "no", "certifications": "no", "languages": "no", "achievements": "no" }
 
 RULES:
 1. Output ONLY the JSON, no explanations

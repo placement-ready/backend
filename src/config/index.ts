@@ -54,10 +54,10 @@ export const config = {
 			: process.env.MONGODB_URI || "mongodb://localhost:27017/hiremind",
 	},
 
-	gemini: {
-		apiKey: process.env.GEMINI_API_KEY || "",
-		model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-		temperature: parseFloat(process.env.GEMINI_TEMPERATURE || "0.7"),
-		maxOutputTokens: parseInt(process.env.GEMINI_MAX_TOKENS || "8192", 10),
+	groq: {
+		apiKey: process.env.GROQ_API_KEY || "",
+		model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+		temperature: parseFloat(process.env.GROQ_TEMPERATURE || "0.7"),
+		maxTokens: parseInt(process.env.GROQ_MAX_TOKENS || "8192", 10),
 	},
 };

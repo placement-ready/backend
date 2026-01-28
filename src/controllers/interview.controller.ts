@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { nanoid } from "nanoid";
 import { Interview } from "../models";
-import { geminiService, SeniorityLevel, InterviewType } from "../ai/gemini.service";
+import { groqService, SeniorityLevel, InterviewType } from "../ai/groq.service";
 
 // Create a new interview session
 export const createInterview = async (req: Request, res: Response): Promise<void> => {
@@ -30,18 +30,18 @@ export const createInterview = async (req: Request, res: Response): Promise<void
 			return;
 		}
 
-		if (!geminiService.isConfigured()) {
+		if (!groqService.isConfigured()) {
 			res.status(503).json({
 				success: false,
-				message: "AI service is not configured. Please set GEMINI_API_KEY.",
+				message: "AI service is not configured. Please set GROQ_API_KEY.",
 			});
 			return;
 		}
 
 		const sessionId = nanoid(12);
 
-		// Generate questions with Gemini AI
-		const generatedQuestions = await geminiService.generateQuestions(
+		// Generate questions with Groq AI
+		const generatedQuestions = await groqService.generateQuestions(
 			jobDescription,
 			seniorityLevel as SeniorityLevel,
 			type as InterviewType,
@@ -403,8 +403,8 @@ export const getInterviewStats = async (req: Request, res: Response): Promise<vo
 			const weekScore =
 				weekInterviews.length > 0
 					? Math.round(
-							weekInterviews.reduce((acc, w) => acc + (w.score || 0), 0) / weekInterviews.length,
-						)
+						weekInterviews.reduce((acc, w) => acc + (w.score || 0), 0) / weekInterviews.length,
+					)
 					: 0;
 
 			weeklyData.push({
@@ -429,7 +429,7 @@ export const getInterviewStats = async (req: Request, res: Response): Promise<vo
 	}
 };
 
-// Generate interview questions using Gemini AI
+// Generate interview questions using Groq AI
 export const generateQuestions = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const userId = req.user?.id;
@@ -448,15 +448,15 @@ export const generateQuestions = async (req: Request, res: Response): Promise<vo
 			return;
 		}
 
-		if (!geminiService.isConfigured()) {
+		if (!groqService.isConfigured()) {
 			res.status(503).json({
 				success: false,
-				message: "AI service is not configured. Please set GEMINI_API_KEY.",
+				message: "AI service is not configured. Please set GROQ_API_KEY.",
 			});
 			return;
 		}
 
-		const questions = await geminiService.generateQuestions(
+		const questions = await groqService.generateQuestions(
 			jobDescription,
 			seniorityLevel as SeniorityLevel,
 			type as InterviewType,
@@ -480,7 +480,7 @@ export const generateQuestions = async (req: Request, res: Response): Promise<vo
 	}
 };
 
-// Evaluate interview answers using Gemini AI
+// Evaluate interview answers using Groq AI
 export const evaluateInterview = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const userId = req.user?.id;
@@ -505,10 +505,10 @@ export const evaluateInterview = async (req: Request, res: Response): Promise<vo
 			return;
 		}
 
-		if (!geminiService.isConfigured()) {
+		if (!groqService.isConfigured()) {
 			res.status(503).json({
 				success: false,
-				message: "AI service is not configured. Please set GEMINI_API_KEY.",
+				message: "AI service is not configured. Please set GROQ_API_KEY.",
 			});
 			return;
 		}
@@ -528,7 +528,7 @@ export const evaluateInterview = async (req: Request, res: Response): Promise<vo
 			return;
 		}
 
-		const evaluation = await geminiService.evaluateAnswers(
+		const evaluation = await groqService.evaluateAnswers(
 			questions.slice(0, answers.length),
 			answers,
 			interview.jobDescription || `${interview.type} interview`,

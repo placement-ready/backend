@@ -3,7 +3,7 @@
  * Handles AI interactions for the resume builder chat system
  */
 
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import Groq from "groq-sdk";
 import { config } from "../config";
 import {
     RESUME_BUILDER_SYSTEM_PROMPT,
@@ -116,46 +116,23 @@ export interface FinalResumeData {
 }
 
 // ============================================================
-// SAFETY SETTINGS
-// ============================================================
-
-const safetySettings = [
-    {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-];
-
-// ============================================================
 // RESUME CHAT SERVICE CLASS
 // ============================================================
 
 class ResumeChatService {
-    private genAI: GoogleGenAI | null = null;
+    private groq: Groq | null = null;
 
     /**
-     * Get or create the Gemini client
+     * Get or create the Groq client
      */
-    private getClient(): GoogleGenAI {
-        if (!this.genAI) {
-            if (!config.gemini.apiKey) {
-                throw new Error("GEMINI_API_KEY is not configured. Please set the environment variable.");
+    private getClient(): Groq {
+        if (!this.groq) {
+            if (!config.groq.apiKey) {
+                throw new Error("GROQ_API_KEY is not configured. Please set the environment variable.");
             }
-            this.genAI = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+            this.groq = new Groq({ apiKey: config.groq.apiKey });
         }
-        return this.genAI;
+        return this.groq;
     }
 
     /**
@@ -263,16 +240,24 @@ class ResumeChatService {
     /**
      * Build conversation context for AI
      */
-    private async buildConversationContext(sessionId: string): Promise<string> {
-        const messages = await this.getChatHistory(sessionId);
+    private async buildConversationMessages(sessionId: string, systemPrompt: string): Promise<any[]> {
+        const history = await this.getChatHistory(sessionId);
 
-        // Filter out system messages and format for AI
-        const conversationMessages = messages
-            .filter((m) => m.role !== "system")
-            .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
-            .join("\n\n");
+        const messages = [
+            { role: "system", content: systemPrompt }
+        ];
 
-        return conversationMessages;
+        // Add history (Groq/OpenAI format)
+        history.forEach(msg => {
+            if (msg.role !== "system") {
+                messages.push({
+                    role: msg.role as "user" | "assistant",
+                    content: msg.content
+                });
+            }
+        });
+
+        return messages;
     }
 
     /**
@@ -307,9 +292,6 @@ class ResumeChatService {
                 timestamp: new Date(),
             });
 
-            // Get conversation context
-            const conversationContext = await this.buildConversationContext(sessionId);
-
             // Build dynamic system prompt
             let systemPrompt = RESUME_BUILDER_SYSTEM_PROMPT;
 
@@ -323,27 +305,22 @@ class ResumeChatService {
                 systemPrompt += "\n\n" + JD_ALIGNMENT_PROMPT(metadata.jobDescription);
             }
 
-            // Build the prompt
-            const prompt = conversationContext
-                ? `Previous conversation:\n${conversationContext}\n\nUser: ${userMessage}\n\nAssistant:`
-                : `User: ${userMessage}\n\nAssistant:`;
+            // Prepare messages
+            const messages = await this.buildConversationMessages(sessionId, systemPrompt);
 
             // Stream response
-            const response = await client.models.generateContentStream({
-                model: config.gemini.model,
-                contents: prompt,
-                config: {
-                    systemInstruction: systemPrompt,
-                    safetySettings,
-                    temperature: RESUME_AI_CONFIG.temperature.conversation,
-                    maxOutputTokens: RESUME_AI_CONFIG.maxOutputTokens.conversation,
-                },
+            const completion = await client.chat.completions.create({
+                messages: messages,
+                model: config.groq.model,
+                temperature: config.groq.temperature,
+                max_tokens: config.groq.maxTokens,
+                stream: true,
             });
 
             let fullMessage = "";
 
-            for await (const chunk of response) {
-                const text = chunk.text || "";
+            for await (const chunk of completion) {
+                const text = chunk.choices[0]?.delta?.content || "";
                 if (text) {
                     fullMessage += text;
                     callbacks.onToken(text);
@@ -379,25 +356,16 @@ class ResumeChatService {
             timestamp: new Date(),
         });
 
-        // Get conversation context
-        const conversationContext = await this.buildConversationContext(sessionId);
+        const messages = await this.buildConversationMessages(sessionId, RESUME_BUILDER_SYSTEM_PROMPT);
 
-        const prompt = conversationContext
-            ? `Previous conversation:\n${conversationContext}\n\nUser: ${userMessage}\n\nAssistant:`
-            : `User: ${userMessage}\n\nAssistant:`;
-
-        const response = await client.models.generateContent({
-            model: config.gemini.model,
-            contents: prompt,
-            config: {
-                systemInstruction: RESUME_BUILDER_SYSTEM_PROMPT,
-                safetySettings,
-                temperature: RESUME_AI_CONFIG.temperature.conversation,
-                maxOutputTokens: RESUME_AI_CONFIG.maxOutputTokens.conversation,
-            },
+        const completion = await client.chat.completions.create({
+            messages: messages,
+            model: config.groq.model,
+            temperature: config.groq.temperature,
+            max_tokens: config.groq.maxTokens,
         });
 
-        const assistantMessage = response.text || "";
+        const assistantMessage = completion.choices[0]?.message?.content || "";
 
         // Save assistant message
         await ResumeChatMessage.create({
@@ -510,38 +478,60 @@ class ResumeChatService {
             .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
             .join("\n\n");
 
-        // Generate JSON with very low temperature for deterministic output
-        const response = await client.models.generateContent({
-            model: config.gemini.model,
-            contents: `Extract the resume data from this conversation:\n\n${conversationText}`,
-            config: {
-                systemInstruction: FINAL_RESUME_GENERATION_PROMPT,
-                safetySettings,
-                temperature: RESUME_AI_CONFIG.temperature.jsonGeneration,
-                maxOutputTokens: RESUME_AI_CONFIG.maxOutputTokens.jsonGeneration,
-            },
+        // Generate JSON with very low temperature
+        const prompt = `Extract the resume data from this conversation:\n\n${conversationText}`;
+
+        const completionResponse = await client.chat.completions.create({
+            messages: [
+                { role: "system", content: FINAL_RESUME_GENERATION_PROMPT },
+                { role: "user", content: prompt }
+            ],
+            model: config.groq.model,
+            temperature: 0.1, // Low temp for JSON
+            max_tokens: config.groq.maxTokens,
+            response_format: { type: "json_object" } // Use JSON mode if available, helpful for Llama 3
         });
 
-        const responseText = response.text || "";
+        const responseText = completionResponse.choices[0]?.message?.content || "";
 
         // Parse JSON response
         let resumeData: FinalResumeData;
         try {
-            // Clean potential markdown code blocks
             let cleanText = responseText.trim();
-            if (cleanText.startsWith("```json")) {
-                cleanText = cleanText.slice(7);
-            } else if (cleanText.startsWith("```")) {
-                cleanText = cleanText.slice(3);
+            console.log("---- FINAL RESUME GENERATION DEBUG ----");
+            console.log("Raw Groq Response Length:", responseText.length);
+            console.log("Raw Groq Response Preview:", responseText.substring(0, 100) + "...");
+
+            // Try to find JSON object if wrapped in text
+            const firstBrace = cleanText.indexOf('{');
+            const lastBrace = cleanText.lastIndexOf('}');
+
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                cleanText = cleanText.substring(firstBrace, lastBrace + 1);
+            } else {
+                console.warn("WARN: No curly braces found in response. Attempting markdown strip fallback.");
+                // Remove markdown code blocks if brace extraction failed
+                if (cleanText.startsWith("```json")) {
+                    cleanText = cleanText.slice(7);
+                } else if (cleanText.startsWith("```")) {
+                    cleanText = cleanText.slice(3);
+                }
+                if (cleanText.endsWith("```")) {
+                    cleanText = cleanText.slice(0, -3);
+                }
             }
-            if (cleanText.endsWith("```")) {
-                cleanText = cleanText.slice(0, -3);
-            }
+
             cleanText = cleanText.trim();
+            console.log("Cleaned JSON Length:", cleanText.length);
+            console.log("Cleaned JSON Preview:", cleanText.substring(0, 100) + "...");
 
             resumeData = JSON.parse(cleanText);
+            console.log("Successfully parsed JSON. Keys:", Object.keys(resumeData));
+            console.log("-----------------------------------------");
         } catch (error) {
-            console.error("Failed to parse resume JSON:", responseText);
+            console.error("CRITICAL: Failed to parse resume JSON.");
+            console.error("Error Message:", error instanceof Error ? error.message : String(error));
+            console.error("Raw Output was:", responseText);
             throw new Error("Failed to generate valid resume JSON");
         }
 
@@ -592,7 +582,7 @@ class ResumeChatService {
      * Check if the service is configured
      */
     isConfigured(): boolean {
-        return !!config.gemini.apiKey;
+        return !!config.groq.apiKey;
     }
 
     /**
@@ -703,18 +693,18 @@ class ResumeChatService {
                 .join("\n\n");
 
             // Use AI to detect which sections have data
-            const response = await client.models.generateContent({
-                model: config.gemini.model,
-                contents: `Analyze this resume conversation:\n\n${conversationText}`,
-                config: {
-                    systemInstruction: PROGRESS_DETECTION_PROMPT,
-                    safetySettings,
-                    temperature: RESUME_AI_CONFIG.temperature.progressDetection,
-                    maxOutputTokens: RESUME_AI_CONFIG.maxOutputTokens.progressDetection,
-                },
+            const completion = await client.chat.completions.create({
+                messages: [
+                    { role: "system", content: PROGRESS_DETECTION_PROMPT },
+                    { role: "user", content: `Analyze this resume conversation:\n\n${conversationText}` }
+                ],
+                model: config.groq.model,
+                temperature: 0.1,
+                max_tokens: config.groq.maxTokens,
+                response_format: { type: "json_object" }
             });
 
-            const responseText = (response.text || "").trim();
+            const responseText = (completion.choices[0]?.message?.content || "").trim();
 
             // Parse JSON response - try multiple extraction strategies
             let progressData: Record<string, string>;
