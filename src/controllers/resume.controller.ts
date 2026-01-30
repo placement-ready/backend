@@ -1,317 +1,463 @@
-import { Request, Response, NextFunction } from "express";
-import { Types } from "mongoose";
-import { ResumeData, ResumeTemplate } from "../models";
-import { renderResume } from "../utils/renderResume";
+import { Request, Response } from "express";
+import { nanoid } from "nanoid";
+import { ResumeMetadata, ResumeContent, ResumeChatMessage } from "../models";
 
-function requireUser(req: Request, res: Response): { userId: string } | null {
-	const user = req.user;
-	if (!user?.id) {
-		res.status(401).json({ success: false, error: "Authentication required" });
-		return null;
-	}
-	return { userId: user.id };
+// Helper to compute progress from completed sections
+async function getResumeProgress(sessionId: string): Promise<number> {
+	const content = await ResumeContent.findOne({ sessionId }).lean();
+	const completedCount = content?.completedSections?.length || 0;
+	const totalSections = 9;
+	return Math.round((completedCount / totalSections) * 100);
 }
 
-function toObjectId(value: string) {
-	if (!Types.ObjectId.isValid(value)) {
-		return null;
-	}
-	return new Types.ObjectId(value);
-}
-
-// Get all user's resumes
-export const getResume = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Create a new resume session
+export const createResume = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const auth = requireUser(req, res);
-		if (!auth) return;
-
-		const payload = (req.body?.data ?? {}) as Record<string, any>;
-		const resumeId = payload?._id ? toObjectId(payload._id) : null;
-		const userObjectId = toObjectId(auth.userId);
-		if (!resumeId || !userObjectId) {
-			res.status(400).json({ success: false, error: "Invalid resume identifier" });
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
 			return;
 		}
 
-		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId }).populate(
-			"template"
-		);
-		if (!resume) {
-			res.status(404).json({ success: false, error: "Resume not found" });
-			return;
-		}
+		const { title, jobDescription, targetRole, targetCompany } = req.body;
 
-		if (Object.keys(payload).length > 0) {
-			const updates = { ...payload } as Record<string, unknown>;
-			delete updates._id;
-			if (updates.template) {
-				const templateId =
-					typeof updates.template === "string" ? updates.template : (updates.template as any)?._id;
-				const templateObjectId = templateId ? toObjectId(templateId) : null;
-				if (!templateObjectId) {
-					res.status(400).json({ success: false, error: "Invalid template identifier" });
-					return;
-				}
-				updates.template = templateObjectId;
-			}
-			resume.set(updates);
-			await resume.save();
-			await resume.populate("template");
-		}
+		const sessionId = nanoid(12);
 
-		const templateDoc: any = resume.get("template");
-		const templateFile = templateDoc?.templateFile;
-		if (!templateFile) {
-			res.status(400).json({ success: false, error: "Template file missing" });
-			return;
-		}
-
-		const compiledHtml = await renderResume(templateFile, resume.toObject());
-
-		res.status(200).json({
-			success: true,
-			message: "Resumes fetched successfully",
-			data: resume,
+		// Create resume metadata
+		const resume = new ResumeMetadata({
+			userId,
+			sessionId,
+			title: title || "Untitled Resume",
+			status: "gathering", // draft state
+			jobDescription,
+			targetRole,
+			targetCompany,
 		});
-	} catch (error) {
-		next(error);
-	}
-};
 
-// Get resume by ID
-export const getResumeById = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-): Promise<void> => {
-	try {
-		const auth = requireUser(req, res);
-		if (!auth) return;
-
-		const resumeId = toObjectId("");
-		const userObjectId = toObjectId(auth.userId);
-		if (!resumeId || !userObjectId) {
-			res.status(400).json({ success: false, error: "Invalid identifier supplied" });
-			return;
-		}
-
-		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId })
-			.populate("template")
-			.exec();
-		if (!resume) {
-			res.status(404).json({ success: false, error: "Resume not found" });
-			return;
-		}
-
-		res.status(200).json({
-			success: true,
-			message: "Resume fetched successfully",
-			data: resume,
-		});
-	} catch (error) {
-		next(error);
-	}
-};
-
-// Create new resume
-export const createResume = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-): Promise<void> => {
-	try {
-		const auth = requireUser(req, res);
-		if (!auth) return;
-
-		const userObjectId = toObjectId(auth.userId);
-		if (!userObjectId) {
-			res.status(400).json({ success: false, error: "Invalid user identifier" });
-			return;
-		}
-
-		const data = req.body;
-		const templateId = typeof data.template === "string" ? data.template : data.template?._id;
-		const templateObjectId = templateId ? toObjectId(templateId) : null;
-		if (!templateObjectId) {
-			res.status(400).json({ success: false, error: "Template is required" });
-			return;
-		}
-
-		const templateExists = await ResumeTemplate.exists({ _id: templateObjectId });
-		if (!templateExists) {
-			res.status(404).json({ success: false, error: "Template not found" });
-			return;
-		}
-
-		const resume = new ResumeData({
-			...data,
-			userId: userObjectId,
-			template: templateObjectId,
-		});
 		await resume.save();
-		await resume.populate("template");
+
+		// Create empty resume content
+		const content = new ResumeContent({
+			sessionId,
+			personalInfo: {},
+			experience: [],
+			education: [],
+			skills: [],
+			projects: [],
+			certifications: [],
+			languages: [],
+			achievements: [],
+			completedSections: [],
+			currentSection: "personalInfo",
+			isComplete: false,
+			refineMode: false,
+		});
+
+		await content.save();
+
+		const progress = await getResumeProgress(sessionId);
 
 		res.status(201).json({
 			success: true,
-			message: "Resume created successfully",
-			data: resume,
+			resume: {
+				id: resume._id,
+				sessionId: resume.sessionId,
+				title: resume.title,
+				status: resume.status,
+				progress,
+				targetRole: resume.targetRole,
+				createdAt: resume.createdAt,
+				updatedAt: resume.updatedAt,
+			},
 		});
-	} catch (error) {
-		next(error);
+	} catch (error: any) {
+		console.error("createResume error:", error);
+		res.status(500).json({ success: false, message: error.message });
 	}
 };
 
-// Update resume by ID
-export const updateResume = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-): Promise<void> => {
+// Get all resumes for user
+export const getResumes = async (req: Request, res: Response): Promise<void> => {
 	try {
-		const auth = requireUser(req, res);
-		if (!auth) return;
-
-		const resumeData = req.body;
-		const userObjectId = toObjectId(auth.userId);
-		const resumeId = resumeData?._id ? toObjectId(resumeData._id) : null;
-		if (!userObjectId || !resumeId) {
-			res.status(400).json({ success: false, error: "Invalid resume identifier" });
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
 			return;
 		}
 
-		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId });
-		if (!resume) {
-			res.status(404).json({ success: false, error: "Resume not found" });
-			return;
+		const { status, limit = 10, page = 1 } = req.query;
+
+		const query: any = { userId };
+		if (status) {
+			query.status = status;
 		}
 
-		const updates = { ...resumeData } as Record<string, unknown>;
-		delete updates._id;
+		const resumes = await ResumeMetadata.find(query)
+			.sort({ updatedAt: -1 })
+			.limit(Number(limit))
+			.skip((Number(page) - 1) * Number(limit))
+			.lean();
 
-		const templateId =
-			typeof resumeData.template === "string" ? resumeData.template : resumeData.template?._id;
-		if (templateId) {
-			const templateObjectId = toObjectId(templateId);
-			if (!templateObjectId) {
-				res.status(400).json({ success: false, error: "Invalid template identifier" });
-				return;
-			}
-
-			const templateExists = await ResumeTemplate.exists({ _id: templateObjectId });
-			if (!templateExists) {
-				res.status(404).json({ success: false, error: "Template not found" });
-				return;
-			}
-
-			updates.template = templateObjectId;
-		}
-
-		resume.set(updates);
-		await resume.save();
-		await resume.populate("template");
-
-		res.status(200).json({
-			success: true,
-			message: "Resume updated successfully",
-			data: resume,
-		});
-	} catch (error) {
-		next(error);
-	}
-};
-
-// Delete resume by ID
-export const deleteResume = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-): Promise<void> => {
-	try {
-		const auth = requireUser(req, res);
-		if (!auth) return;
-
-		const resumeId = toObjectId("");
-		const userObjectId = toObjectId(auth.userId);
-		if (!resumeId || !userObjectId) {
-			res.status(400).json({ success: false, error: "Invalid resume identifier" });
-			return;
-		}
-
-		const deleted = await ResumeData.findOneAndDelete({ _id: resumeId, userId: userObjectId });
-		if (!deleted) {
-			res.status(404).json({ success: false, error: "Resume not found" });
-			return;
-		}
-
-		res.status(200).json({
-			success: true,
-			message: "Resume deleted successfully",
-		});
-	} catch (error) {
-		next(error);
-	}
-};
-
-export const compileResume = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-): Promise<void> => {
-	try {
-		const auth = requireUser(req, res);
-		if (!auth) return;
-
-		const payload = req.body?.data ?? {};
-		const resumeId = payload?._id ? toObjectId(payload._id) : null;
-		const userObjectId = toObjectId(auth.userId);
-		if (!resumeId || !userObjectId) {
-			res.status(400).json({ success: false, error: "Invalid resume identifier" });
-			return;
-		}
-
-		const resume = await ResumeData.findOne({ _id: resumeId, userId: userObjectId }).populate(
-			"template"
+		const resumesWithProgress = await Promise.all(
+			resumes.map(async (resume) => {
+				const progress = await getResumeProgress(resume.sessionId);
+				return {
+					id: resume._id,
+					sessionId: resume.sessionId,
+					title: resume.title || "Untitled Resume",
+					status: resume.status,
+					progress,
+					targetRole: resume.targetRole,
+					createdAt: resume.createdAt,
+					updatedAt: resume.updatedAt,
+				};
+			}),
 		);
+
+		const total = await ResumeMetadata.countDocuments(query);
+
+		res.status(200).json({ success: true, resumes: resumesWithProgress, total });
+	} catch (error: any) {
+		console.error("getResumes error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Get recent resumes for user
+export const getRecentResumes = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const limit = parseInt(req.query.limit as string) || 3;
+
+		const resumes = await ResumeMetadata.find({ userId })
+			.sort({ updatedAt: -1 })
+			.limit(limit)
+			.lean();
+
+		const resumesWithProgress = await Promise.all(
+			resumes.map(async (resume) => {
+				const progress = await getResumeProgress(resume.sessionId);
+				// Fetch content to get completedSections and currentSection
+				const content = await ResumeContent.findOne({ sessionId: resume.sessionId }).lean();
+				return {
+					id: resume._id,
+					sessionId: resume.sessionId,
+					title: resume.title || "Untitled Resume",
+					status: resume.status,
+					progress,
+					completedSections: content?.completedSections || [],
+					currentSection: content?.currentSection || "personalInfo",
+					targetRole: resume.targetRole,
+					createdAt: resume.createdAt,
+					updatedAt: resume.updatedAt,
+				};
+			}),
+		);
+
+		res.status(200).json({ success: true, resumes: resumesWithProgress });
+	} catch (error: any) {
+		console.error("getRecentResumes error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Get single resume by ID or sessionId
+export const getResume = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const { id } = req.params;
+
+		// Try to find by sessionId first, then by _id
+		let resume = await ResumeMetadata.findOne({ sessionId: id, userId });
 		if (!resume) {
-			res.status(404).json({ success: false, error: "Resume not found" });
+			resume = await ResumeMetadata.findOne({ _id: id, userId });
+		}
+
+		if (!resume) {
+			res.status(404).json({ success: false, message: "Resume not found" });
 			return;
 		}
 
-		if (Object.keys(payload).length > 0) {
-			const updates = { ...payload } as Record<string, unknown>;
-			delete updates._id;
-
-			if (updates.template) {
-				const templateId =
-					typeof updates.template === "string" ? updates.template : (updates.template as any)?._id;
-				const templateObjectId = templateId ? toObjectId(templateId) : null;
-				if (!templateObjectId) {
-					res.status(400).json({ success: false, error: "Invalid template identifier" });
-					return;
-				}
-				updates.template = templateObjectId;
-			}
-
-			resume.set(updates);
-			await resume.save();
-			await resume.populate("template");
-		}
-
-		const templateDoc: any = resume.get("template");
-		const templateFile = templateDoc?.templateFile;
-		if (!templateFile) {
-			res.status(400).json({ success: false, error: "Template file missing" });
-			return;
-		}
-
-		const compiledHtml = await renderResume(templateFile, resume.toObject());
+		const progress = await getResumeProgress(resume.sessionId);
+		const content = await ResumeContent.findOne({ sessionId: resume.sessionId }).lean();
+		const messages = await ResumeChatMessage.find({ sessionId: resume.sessionId })
+			.sort({ timestamp: 1 })
+			.lean();
 
 		res.status(200).json({
 			success: true,
-			message: "Resume compiled successfully",
-			data: compiledHtml,
+			resume: {
+				id: resume._id,
+				sessionId: resume.sessionId,
+				title: resume.title,
+				status: resume.status,
+				progress,
+				targetRole: resume.targetRole,
+				targetCompany: resume.targetCompany,
+				jobDescription: resume.jobDescription,
+				createdAt: resume.createdAt,
+				updatedAt: resume.updatedAt,
+				content: content || null,
+				messages: messages.map((m) => ({
+					role: m.role,
+					content: m.content,
+					timestamp: m.timestamp,
+				})),
+			},
 		});
-	} catch (error) {
-		next(error);
+	} catch (error: any) {
+		console.error("getResume error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Start a resume session
+export const startResumeSession = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const { id } = req.params;
+
+		const resume = await ResumeMetadata.findOne({ sessionId: id, userId });
+		if (!resume) {
+			res.status(404).json({ success: false, message: "Resume not found" });
+			return;
+		}
+
+		if (resume.status !== "gathering") {
+			res
+				.status(400)
+				.json({ success: false, message: "Resume session already started or completed" });
+			return;
+		}
+
+		resume.status = "reviewing";
+		await resume.save();
+
+		// Add first AI message
+		const welcomeMessage = new ResumeChatMessage({
+			sessionId: id,
+			role: "assistant",
+			content:
+				"Welcome to the Resume Builder! I'll help you create a professional resume. Let's start with your personal information. What's your full name?",
+			timestamp: new Date(),
+		});
+
+		await welcomeMessage.save();
+
+		const progress = await getResumeProgress(id);
+
+		res.status(200).json({
+			success: true,
+			resume: {
+				id: resume._id,
+				sessionId: resume.sessionId,
+				title: resume.title,
+				status: resume.status,
+				progress,
+			},
+			message: welcomeMessage,
+		});
+	} catch (error: any) {
+		console.error("startResumeSession error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Add a message to resume session
+export const addResumeMessage = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const { id } = req.params;
+		const { content } = req.body;
+
+		if (!content?.trim()) {
+			res.status(400).json({ success: false, message: "Message content is required" });
+			return;
+		}
+
+		const resume = await ResumeMetadata.findOne({ sessionId: id, userId });
+		if (!resume) {
+			res.status(404).json({ success: false, message: "Resume not found" });
+			return;
+		}
+
+		if (resume.status === "completed") {
+			res.status(400).json({ success: false, message: "Resume already completed" });
+			return;
+		}
+
+		// Add user message
+		const userMessage = new ResumeChatMessage({
+			sessionId: id,
+			role: "user",
+			content: content.trim(),
+			timestamp: new Date(),
+		});
+
+		await userMessage.save();
+
+		res.status(200).json({
+			success: true,
+			message: {
+				role: userMessage.role,
+				content: userMessage.content,
+				timestamp: userMessage.timestamp,
+			},
+		});
+	} catch (error: any) {
+		console.error("addResumeMessage error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Generate resume (mark as completed)
+export const generateResume = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const { id } = req.params;
+
+		const resume = await ResumeMetadata.findOne({ sessionId: id, userId });
+		if (!resume) {
+			res.status(404).json({ success: false, message: "Resume not found" });
+			return;
+		}
+
+		if (resume.status === "completed") {
+			res.status(400).json({ success: false, message: "Resume already generated" });
+			return;
+		}
+
+		// Get resume content
+		const content = await ResumeContent.findOne({ sessionId: id });
+		if (!content) {
+			res.status(400).json({ success: false, message: "Resume content not found" });
+			return;
+		}
+
+		// Mark as completed
+		resume.status = "completed";
+		content.isComplete = true;
+
+		await Promise.all([resume.save(), content.save()]);
+
+		const progress = await getResumeProgress(id);
+
+		res.status(200).json({
+			success: true,
+			resume: {
+				id: resume._id,
+				sessionId: resume.sessionId,
+				title: resume.title,
+				status: resume.status,
+				progress,
+			},
+			content: {
+				personalInfo: content.personalInfo,
+				summary: content.summary,
+				experience: content.experience,
+				education: content.education,
+				skills: content.skills,
+				projects: content.projects,
+				certifications: content.certifications,
+				languages: content.languages,
+				achievements: content.achievements,
+			},
+			message: "Resume generated successfully",
+		});
+	} catch (error: any) {
+		console.error("generateResume error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Rename a resume
+export const renameResume = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const { id } = req.params;
+		const { title } = req.body;
+
+		if (!title?.trim()) {
+			res.status(400).json({ success: false, message: "Title is required" });
+			return;
+		}
+
+		const resume = await ResumeMetadata.findOne({ sessionId: id, userId });
+		if (!resume) {
+			res.status(404).json({ success: false, message: "Resume not found" });
+			return;
+		}
+
+		resume.title = title.trim();
+		await resume.save();
+
+		res.status(200).json({
+			success: true,
+			title: resume.title,
+		});
+	} catch (error: any) {
+		console.error("renameResume error:", error);
+		res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+// Delete a resume and all related data
+export const deleteResume = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			res.status(401).json({ success: false, message: "Unauthorized" });
+			return;
+		}
+
+		const { id } = req.params;
+
+		const resume = await ResumeMetadata.findOne({ sessionId: id, userId });
+		if (!resume) {
+			res.status(404).json({ success: false, message: "Resume not found" });
+			return;
+		}
+
+		// Delete all related data
+		await Promise.all([
+			ResumeMetadata.deleteOne({ sessionId: id }),
+			ResumeContent.deleteOne({ sessionId: id }),
+			ResumeChatMessage.deleteMany({ sessionId: id }),
+		]);
+
+		res.status(200).json({ success: true, message: "Resume deleted successfully" });
+	} catch (error: any) {
+		console.error("deleteResume error:", error);
+		res.status(500).json({ success: false, message: error.message });
 	}
 };

@@ -20,6 +20,7 @@ export const config = {
 		clientUrl: isProd
 			? requiredEnv("CLIENT_URL")
 			: process.env.CLIENT_URL || "http://localhost:3000",
+		apiUrl: isProd ? requiredEnv("API_URL") : process.env.API_URL || "http://localhost:4000",
 	},
 
 	auth: {
@@ -51,5 +52,12 @@ export const config = {
 		uri: isProd
 			? requiredEnv("MONGODB_URI")
 			: process.env.MONGODB_URI || "mongodb://localhost:27017/hiremind",
+	},
+
+	groq: {
+		apiKey: process.env.GROQ_API_KEY || "",
+		model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+		temperature: parseFloat(process.env.GROQ_TEMPERATURE || "0.7"),
+		maxTokens: parseInt(process.env.GROQ_MAX_TOKENS || "8192", 10),
 	},
 };

@@ -1,25 +1,31 @@
-import express from "express";
-import {
-	getResume,
-	createResume,
-	updateResume,
-	deleteResume,
-	getResumeById,
-	compileResume,
-} from "../controllers";
+import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import {
+	createResume,
+	getResumes,
+	getRecentResumes,
+	getResume,
+	startResumeSession,
+	addResumeMessage,
+	generateResume,
+	renameResume,
+	deleteResume,
+} from "../controllers/resume.controller";
 
-const router = express.Router();
+const router = Router();
 
-export const resumeRoutes = () => {
-	router.use(authMiddleware);
+router.use(authMiddleware);
 
-	router.get("/", getResume);
-	router.get("/:id", getResumeById);
-	router.post("/", createResume);
-	router.put("/", updateResume);
-	router.post("/compile", compileResume);
-	router.delete("/:id", deleteResume);
+router.post("/", createResume);
+router.get("/", getResumes);
+router.get("/recent", getRecentResumes);
+router.get("/:id", getResume);
 
-	return router;
-};
+router.post("/:id/start", startResumeSession);
+router.post("/:id/message", addResumeMessage);
+router.post("/:id/generate", generateResume);
+
+router.patch("/:id/rename", renameResume);
+router.delete("/:id", deleteResume);
+
+export const resumeRoutes = () => router;
