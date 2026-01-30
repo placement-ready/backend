@@ -1,15 +1,7 @@
-/**
- * Resume Export Controller
- * Handles HTML generation, preview, and PDF download
- */
-
 import { Request, Response } from "express";
 import { ResumeContent } from "../models";
 import { resumeRenderService, ResumeData } from "../services/resumeRender.service";
 
-/**
- * Transform database content to template-compatible format
- */
 function transformContentToTemplateFormat(content: any): ResumeData {
 	// Transform personalInfo to basics
 	const basics = {
@@ -32,11 +24,10 @@ function transformContentToTemplateFormat(content: any): ResumeData {
 		grade: edu.gpa ? `GPA: ${edu.gpa}` : null,
 	}));
 
-	// Transform skills array to {label, items} format
-	// Group all skills under one category for now
-	const skills = content.skills && content.skills.length > 0
-		? [{ label: "Technical Skills", items: content.skills.join(", ") }]
-		: [];
+	const skills =
+		content.skills && content.skills.length > 0
+			? [{ label: "Technical Skills", items: content.skills.join(", ") }]
+			: [];
 
 	// Transform experience to internships format
 	const internships = (content.experience || []).map((exp: any) => ({
@@ -72,9 +63,6 @@ function transformContentToTemplateFormat(content: any): ResumeData {
 	};
 }
 
-/**
- * Generate HTML from resume data and cache it
- */
 export async function generateResumeHtml(req: Request, res: Response): Promise<void> {
 	const { resumeId, data } = req.body;
 
@@ -107,9 +95,6 @@ export async function generateResumeHtml(req: Request, res: Response): Promise<v
 	res.status(200).json({ success: true, resumeId });
 }
 
-/**
- * Serve rendered HTML for browser preview
- */
 export async function previewResume(req: Request, res: Response): Promise<void> {
 	const { resumeId } = req.params;
 
@@ -130,9 +115,6 @@ export async function previewResume(req: Request, res: Response): Promise<void> 
 	res.send(html);
 }
 
-/**
- * Generate PDF and stream to client
- */
 export async function downloadResumePdf(req: Request, res: Response): Promise<void> {
 	const { resumeId } = req.params;
 
@@ -163,4 +145,3 @@ export async function downloadResumePdf(req: Request, res: Response): Promise<vo
 		res.status(500).json({ error: "Failed to generate PDF" });
 	}
 }
-

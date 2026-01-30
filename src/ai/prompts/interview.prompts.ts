@@ -43,10 +43,6 @@ You MUST respond with a valid JSON object in this exact format:
 - Keep questions professional and directly relevant to the job
 - Avoid overly generic questions that don't relate to the specific role`;
 
-/**
- * System prompt for evaluating interview answers
- * Provides structured feedback with strengths, improvements, and scores
- */
 export const ANSWER_EVALUATION_PROMPT = `You are an expert interview coach and evaluator with extensive experience assessing candidates at top tech companies.
 
 Your task is to evaluate the candidate's interview responses and provide detailed, actionable feedback.
@@ -92,9 +88,6 @@ You MUST respond with a valid JSON object in this exact format:
 - Do NOT be overly harsh or discouraging
 - Calibrate expectations to the seniority level specified`;
 
-/**
- * Follow-up question generation prompt for dynamic interviews
- */
 export const FOLLOW_UP_PROMPT = `You are conducting an interview and need to generate a natural follow-up question based on the candidate's previous response.
 
 ## Guidelines
@@ -110,28 +103,21 @@ Respond with a valid JSON object:
   "reason": "Brief explanation of why this follow-up is relevant"
 }`;
 
-/**
- * Configuration constants for AI generation
- */
 export const AI_CONFIG = {
-	// Temperature settings for different use cases
 	temperature: {
-		questionGeneration: 0.8, // Slightly creative for variety
-		answerEvaluation: 0.3, // More deterministic for consistent scoring
-		followUp: 0.7, // Balanced for natural conversation
+		questionGeneration: 0.8,
+		answerEvaluation: 0.3,
+		followUp: 0.7,
 	},
 
-	// Token limits
 	maxOutputTokens: {
 		questionGeneration: 4096,
 		answerEvaluation: 8192,
 		followUp: 512,
 	},
 
-	// Safety settings
 	safetyThreshold: "BLOCK_MEDIUM_AND_ABOVE",
 
-	// Default question counts by seniority
 	defaultQuestionCount: {
 		junior: 5,
 		mid: 6,

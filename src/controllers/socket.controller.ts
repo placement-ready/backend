@@ -35,13 +35,11 @@ export const connectToSocket = (server: http.Server): Server => {
 	io.on("connection", (socket: Socket) => {
 		console.log("A user has connected:", socket.id);
 
-		// ========== Video Call Events (existing) ==========
 		socket.on("join-call", (path: string) => {
 			if (connections[path] === undefined) {
 				connections[path] = [];
 			}
 
-			// 1:1 calls
 			if (connections[path].length >= 2) {
 				socket.emit("room-full", "Cannot join: this meeting already has 2 participants");
 				return;
@@ -50,7 +48,6 @@ export const connectToSocket = (server: http.Server): Server => {
 			connections[path].push(socket.id);
 			timeOnline[socket.id] = new Date();
 
-			// Notify all users in the room about the new user
 			for (const id of connections[path]) {
 				io.to(id).emit("user-joined", socket.id, connections[path]);
 			}
@@ -59,8 +56,6 @@ export const connectToSocket = (server: http.Server): Server => {
 		socket.on("signal", (toId: string, message: any) => {
 			io.to(toId).emit("signal", socket.id, message);
 		});
-
-		// ========== Text Interview Events (new) ==========
 
 		// Join an interview room
 		socket.on("interview:join", async (sessionId: string) => {
@@ -139,7 +134,6 @@ export const connectToSocket = (server: http.Server): Server => {
 				// Broadcast user message to room
 				io.to(`interview:${sessionId}`).emit("interview:message", userMessage);
 
-				// Generate AI response after a brief delay to feel natural
 				setTimeout(async () => {
 					const currentQuestion = interview.questions[interview.currentQuestionIndex];
 					const isLastQuestion = interview.currentQuestionIndex >= interview.questions.length - 1;
@@ -147,9 +141,11 @@ export const connectToSocket = (server: http.Server): Server => {
 					let aiContent: string;
 
 					if (content.length < 50) {
-						aiContent = "I see. Could you elaborate a bit more on your response? Providing specific examples helps demonstrate your experience.";
+						aiContent =
+							"I see. Could you elaborate a bit more on your response? Providing specific examples helps demonstrate your experience.";
 					} else if (content.length > 500) {
-						aiContent = "That's a comprehensive response! You've covered a lot of ground. In actual interviews, try to keep your answers focused and under 2 minutes.";
+						aiContent =
+							"That's a comprehensive response! You've covered a lot of ground. In actual interviews, try to keep your answers focused and under 2 minutes.";
 					} else {
 						const feedbackOptions = [
 							"Great response! You've structured your answer well. Let's continue when you're ready.",
@@ -161,7 +157,8 @@ export const connectToSocket = (server: http.Server): Server => {
 					}
 
 					if (isLastQuestion) {
-						aiContent += "\n\nThis was the final question. Click 'Complete Interview' when you're ready to finish and receive your feedback.";
+						aiContent +=
+							"\n\nThis was the final question. Click 'Complete Interview' when you're ready to finish and receive your feedback.";
 					}
 
 					const aiMessage = {
@@ -254,7 +251,9 @@ export const connectToSocket = (server: http.Server): Server => {
 				const baseScore = 70;
 				const engagementBonus = Math.min(15, avgWordCount / 10);
 				const questionsAnsweredBonus = (userMessages.length / interview.questions.length) * 15;
-				const score = Math.round(Math.min(100, baseScore + engagementBonus + questionsAnsweredBonus));
+				const score = Math.round(
+					Math.min(100, baseScore + engagementBonus + questionsAnsweredBonus),
+				);
 
 				interview.status = "completed";
 				interview.completedAt = new Date();
@@ -313,7 +312,6 @@ export const connectToSocket = (server: http.Server): Server => {
 			console.log(`User ${socket.id} left interview: ${sessionId}`);
 		});
 
-		// ========== Disconnect Handler ==========
 		socket.on("disconnect", () => {
 			// Clean up video call connections
 			for (const [roomId, participants] of Object.entries(connections)) {
@@ -354,7 +352,6 @@ export const connectToSocket = (server: http.Server): Server => {
 		});
 	});
 
-	// Register resume chat handlers
 	registerResumeChatHandlers(io);
 
 	return io;

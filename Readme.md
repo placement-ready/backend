@@ -1,45 +1,46 @@
-# HireMind Backend
+# HireMind Backend ⚙️
 
-[![Node.js](https://img.shields.io/badge/Node.js-24.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Express](https://img.shields.io/badge/Express-Minimalist-black?logo=express&logoColor=white)](https://expressjs.com/) [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas_Ready-47a248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+![Node.js](https://img.shields.io/badge/Node.js-24.x-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-API-000000?style=for-the-badge&logo=express&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178c6?style=for-the-badge&logo=typescript&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47a248?style=for-the-badge&logo=mongodb&logoColor=white)
 
-> Lean, TypeScript-first API powering HireMind's user profile and interview experiences. Currently undergoing a clean-room rewrite focused on five core endpoints and zero bloat.
+> Lean, TypeScript-first API powering HireMind's user profile and interview experiences.
 
-## Highlights
+## Features ⚡
 
-- **Minimal surface**: only `/health`, `/user/me`, and `/interview/*` endpoints survive the purge.
-- **Strict typing**: end-to-end TypeScript with lightweight domain models.
-- **Mongo-ready**: thin connection layer (re)built for fast local dev + easy Atlas deploys.
-- **Ship-fast mindset**: tiny middleware stack, opinionated API responses, batteries-optional.
+- **Minimal Surface**: Focused endpoints for `/user`, `/interview`, and `/resume`.
+- **Strict Typing**: End-to-end TypeScript safety.
+- **Fast**: Optimized for speed with a tiny middleware stack.
 
-## API Surface
+## API Overview 📡
 
 | Method | Path                 | Purpose                                       |
 | ------ | -------------------- | --------------------------------------------- |
-| `GET`  | `/health`            | Infra heartbeat + uptime snapshot             |
-| `GET`  | `/user/me`           | Return the authenticated HireMind user        |
-| `POST` | `/interview/start`   | Open a new mock interview session             |
-| `POST` | `/interview/message` | Send conversation turns within a session      |
-| `GET`  | `/interview/history` | Fetch the user's recent interview transcripts |
+| `GET`  | `/health`            | Infrastructure heartbeat                      |
+| `GET`  | `/user/me`           | Authenticated user profile                    |
+| `POST` | `/interview/start`   | Initialize interview session                  |
+| `POST` | `/interview/message` | Conversation turn                             |
+| `GET`  | `/interview/history` | User's past interviews                        |
 
-## Getting Started
+## Getting Started 🛠️
 
-1. **Install**: `cd backend && npm install`
-2. **Configure**: copy `.env.example` → `.env` and set the essentials below.
-3. **Run**: `npm run dev` (hot reload) or `npm run build && npm start` for production smoke tests.
+1. **Setup**: Run the setup script.
+   ```bash
+   ./setup.sh
+   # Sets up .env and installs dependencies
+   ```
 
-## Environment
+2. **Run**: Start the server.
+   ```bash
+   npm run dev
+   # Runs on localhost:4000
+   ```
 
-| Variable      | Description                   | Example                              |
-| ------------- | ----------------------------- | ------------------------------------ |
-| `PORT`        | HTTP port                     | `4000`                               |
-| `NODE_ENV`    | `development` \| `production` | `development`                        |
-| `MONGODB_URI` | Mongo connection string       | `mongodb://localhost:27017/hiremind` |
-| `CORS_ORIGIN` | Allowed frontend origin(s)    | `http://localhost:3000`              |
+## Environment Variables
 
-## Scripts
-
-| Command         | Description                                       |
-| --------------- | ------------------------------------------------- |
-| `npm run dev`   | Start the TypeScript watcher + nodemon dev server |
-| `npm run build` | Compile to `dist/` via `tsc`                      |
-| `npm start`     | Serve the compiled build                          |
+| Variable      | Default                              | Description                   |
+| ------------- | ------------------------------------ | ----------------------------- |
+| `PORT`        | `4000`                               | Server port                   |
+| `MONGODB_URI` | `mongodb://localhost:27017/hiremind` | Database connection string    |
+| `CORS_ORIGIN` | `http://localhost:3000`              | Allowed frontend origin       |

@@ -1,13 +1,3 @@
-/**
- * Resume Builder AI Prompts
- * System prompts for AI-driven resume data collection via chat
- */
-
-// ============================================================
-// MAIN RESUME BUILDER SYSTEM PROMPT
-// Guides the AI to collect resume data incrementally
-// ============================================================
-
 export const RESUME_BUILDER_SYSTEM_PROMPT = `You are a resume generation assistant. Your job is to turn user-provided information into a clean, professional resume with minimal friction.
 
 ## CORE BEHAVIOR
@@ -46,11 +36,6 @@ Say:
 - Avoid meta commentary
 - Generate when possible`;
 
-// ============================================================
-// REFINEMENT MODE PROMPT EXTENSION
-// Added when refineMode is enabled
-// ============================================================
-
 export const REFINEMENT_MODE_PROMPT = `
 ## Refinement Mode (ACTIVE)
 Silently optimize content for ATS without asking for confirmation:
@@ -66,11 +51,6 @@ RULES:
 - Do NOT explain what you refined
 - Apply refinements silently during generation
 - NEVER invent facts - only rephrase what user provided`;
-
-// ============================================================
-// JOB DESCRIPTION ALIGNMENT PROMPT
-// Added when a JD is provided
-// ============================================================
 
 export const JD_ALIGNMENT_PROMPT = (jobDescription: string) => `
 ## Job Description Alignment (ACTIVE)
@@ -88,11 +68,6 @@ ${jobDescription}
 6. **NEVER add skills** - Do not add skills the user hasn't mentioned
 
 The goal is to present the user's actual qualifications in the best light for this specific role.`;
-
-// ============================================================
-// SECTION-SPECIFIC PROMPTS
-// Used when entering each section for focused collection
-// ============================================================
 
 export const SECTION_PROMPTS: Record<string, string> = {
 	personalInfo: `Now collecting: **Personal Information**
@@ -193,11 +168,6 @@ Would you like to highlight any notable achievements or awards? These might incl
 Do you have any achievements to include?`,
 };
 
-// ============================================================
-// FINAL JSON GENERATION PROMPT
-// Used ONLY after all data is collected and confirmed
-// ============================================================
-
 export const FINAL_RESUME_GENERATION_PROMPT = `You are a resume data formatter. Your ONLY task is to convert the collected resume information into a properly structured JSON object.
 
 ## Input
@@ -265,33 +235,21 @@ You MUST output ONLY a valid JSON object with NO additional text, explanations, 
 7. Do NOT include comments within the JSON (standard JSON does not support comments)
 8. The output must be valid, parseable JSON`;
 
-// ============================================================
-// AI CONFIGURATION
-// ============================================================
-
 export const RESUME_AI_CONFIG = {
-	// Low temperature for consistent, focused responses
 	temperature: {
 		conversation: 0.4,
-		jsonGeneration: 0.1, // Very low for deterministic JSON output
-		progressDetection: 0.0, // Zero for deterministic analysis
+		jsonGeneration: 0.1,
+		progressDetection: 0.0,
 	},
 
-	// Token limits per response type
 	maxOutputTokens: {
 		conversation: 1024,
 		jsonGeneration: 4096,
 		progressDetection: 256,
 	},
 
-	// Safety threshold
 	safetyThreshold: "BLOCK_MEDIUM_AND_ABOVE",
 };
-
-// ============================================================
-// PROGRESS DETECTION PROMPT
-// Used to analyze conversation and detect which sections have data
-// ============================================================
 
 export const PROGRESS_DETECTION_PROMPT = `You are a resume data analyzer.Analyze the conversation and determine which resume sections have enough data.
 
@@ -316,10 +274,6 @@ RULES:
 1. Output ONLY the JSON, no explanations
 2. Be generous - if the data exists in the conversation, mark "yes"
 3. Focus on whether data EXISTS, not whether it's complete or polished`;
-
-// ============================================================
-// VALIDATION MESSAGES
-// ============================================================
 
 export const VALIDATION_MESSAGES = {
 	personalInfo: {

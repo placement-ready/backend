@@ -1,7 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-// ==================== Interfaces ====================
-
 interface IMessage {
 	role: "user" | "ai";
 	content: string;
@@ -62,13 +60,10 @@ interface IInterview extends Document {
 	startedAt?: Date;
 	completedAt?: Date;
 	createdAt: Date;
-	// New fields for AI-powered interviews
 	jobDescription?: string;
 	seniorityLevel?: SeniorityLevel;
 	aiGenerated: boolean;
 }
-
-// ==================== Schemas ====================
 
 const messageSchema = new Schema(
 	{
@@ -76,7 +71,7 @@ const messageSchema = new Schema(
 		content: { type: String, required: true },
 		timestamp: { type: Date, default: Date.now },
 	},
-	{ _id: false }
+	{ _id: false },
 );
 
 const feedbackSchema = new Schema(
@@ -85,7 +80,7 @@ const feedbackSchema = new Schema(
 		improvements: [{ type: String }],
 		tips: [{ type: String }],
 	},
-	{ _id: false }
+	{ _id: false },
 );
 
 const questionMetadataSchema = new Schema(
@@ -98,7 +93,7 @@ const questionMetadataSchema = new Schema(
 		answer: { type: String },
 		answeredAt: { type: Date },
 	},
-	{ _id: false }
+	{ _id: false },
 );
 
 const questionResultSchema = new Schema(
@@ -109,7 +104,7 @@ const questionResultSchema = new Schema(
 		improvements: [{ type: String }],
 		feedback: { type: String },
 	},
-	{ _id: false }
+	{ _id: false },
 );
 
 const evaluationSchema = new Schema(
@@ -127,7 +122,7 @@ const evaluationSchema = new Schema(
 		},
 		evaluatedAt: { type: Date, default: Date.now },
 	},
-	{ _id: false }
+	{ _id: false },
 );
 
 const interviewSchema = new Schema({
@@ -155,7 +150,6 @@ const interviewSchema = new Schema({
 	startedAt: { type: Date },
 	completedAt: { type: Date },
 	createdAt: { type: Date, default: Date.now },
-	// New fields for AI-powered interviews
 	jobDescription: { type: String },
 	seniorityLevel: {
 		type: String,
@@ -164,7 +158,6 @@ const interviewSchema = new Schema({
 	aiGenerated: { type: Boolean, default: false },
 });
 
-// Index for efficient queries
 interviewSchema.index({ userId: 1, sessionId: 1, createdAt: -1 });
 interviewSchema.index({ userId: 1, status: 1 });
 

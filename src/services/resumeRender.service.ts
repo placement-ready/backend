@@ -1,14 +1,8 @@
-/**
- * Resume Render Service
- * Handles HTML rendering with Handlebars and PDF generation with Puppeteer
- */
-
 import * as fs from "fs";
 import * as path from "path";
 import Handlebars from "handlebars";
 import puppeteer, { Browser } from "puppeteer";
 
-// Types matching the rendercv template
 interface Basics {
 	name?: string;
 	email?: string;
@@ -30,7 +24,7 @@ interface Education {
 
 interface Skill {
 	label?: string;
-	items?: string; // Comma-separated string of skills
+	items?: string;
 }
 
 interface Internship {
@@ -61,11 +55,9 @@ export interface ResumeData {
 	achievements?: string[];
 }
 
-// In-memory cache for generated HTML
 const htmlCache = new Map<string, { html: string; timestamp: number }>();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 30 * 60 * 1000;
 
-// Browser instance for Puppeteer
 let browserInstance: Browser | null = null;
 
 class ResumeRenderService {
@@ -75,9 +67,6 @@ class ResumeRenderService {
 		this.loadTemplate();
 	}
 
-	/**
-	 * Load and compile Handlebars template
-	 */
 	private loadTemplate(): void {
 		try {
 			const templatePath = path.join(__dirname, "../templates/rendercv/resume.hbs");
@@ -88,9 +77,6 @@ class ResumeRenderService {
 		}
 	}
 
-	/**
-	 * Validate resume data has required fields
-	 */
 	validateData(data: Partial<ResumeData>): { valid: boolean; error?: string } {
 		if (!data.basics?.name) {
 			return { valid: false, error: "Name is required" };
@@ -111,15 +97,11 @@ class ResumeRenderService {
 		return { valid: true };
 	}
 
-	/**
-	 * Render resume HTML from data
-	 */
 	renderHtml(resumeId: string, data: ResumeData): string {
 		if (!this.template) {
 			throw new Error("Template not loaded");
 		}
 
-		// Normalize data
 		const normalizedData: ResumeData = {
 			basics: data.basics,
 			summary: data.summary || "",
@@ -133,7 +115,6 @@ class ResumeRenderService {
 
 		const html = this.template(normalizedData);
 
-		// Cache the HTML
 		htmlCache.set(resumeId, {
 			html,
 			timestamp: Date.now(),
@@ -142,9 +123,6 @@ class ResumeRenderService {
 		return html;
 	}
 
-	/**
-	 * Get cached HTML for a resume
-	 */
 	getCachedHtml(resumeId: string): string | null {
 		const cached = htmlCache.get(resumeId);
 		if (!cached) return null;
@@ -158,9 +136,6 @@ class ResumeRenderService {
 		return cached.html;
 	}
 
-	/**
-	 * Get or create browser instance
-	 */
 	private async getBrowser(): Promise<Browser> {
 		if (!browserInstance || !browserInstance.isConnected()) {
 			browserInstance = await puppeteer.launch({
@@ -171,9 +146,6 @@ class ResumeRenderService {
 		return browserInstance;
 	}
 
-	/**
-	 * Generate PDF from HTML
-	 */
 	async generatePdf(resumeId: string): Promise<Buffer> {
 		const html = this.getCachedHtml(resumeId);
 		if (!html) {
@@ -203,9 +175,6 @@ class ResumeRenderService {
 		}
 	}
 
-	/**
-	 * Clean up browser instance
-	 */
 	async cleanup(): Promise<void> {
 		if (browserInstance) {
 			await browserInstance.close();
@@ -213,9 +182,6 @@ class ResumeRenderService {
 		}
 	}
 
-	/**
-	 * Clear expired cache entries
-	 */
 	clearExpiredCache(): void {
 		const now = Date.now();
 		for (const [key, value] of htmlCache.entries()) {
@@ -226,10 +192,8 @@ class ResumeRenderService {
 	}
 }
 
-// Export singleton instance
 export const resumeRenderService = new ResumeRenderService();
 
-// Cleanup on process exit
 process.on("SIGINT", async () => {
 	await resumeRenderService.cleanup();
 	process.exit(0);
