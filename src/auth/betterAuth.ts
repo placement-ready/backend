@@ -40,7 +40,7 @@ export function getAuth() {
 				useSecureCookies: true,
 				crossSubDomainCookies: {
 					enabled: true,
-					domain: clientUrl,
+					domain: clientUrl.replace(/^https?:\/\//, "").split("/")[0],
 				},
 				defaultCookieAttributes: {
 					httpOnly: true,
