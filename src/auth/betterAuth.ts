@@ -8,6 +8,13 @@ let authInstance: ReturnType<typeof betterAuth>;
 
 export function getAuth() {
 	if (!authInstance) {
+		const baseURL = config.server.apiUrl || "http://localhost:4000";
+		const clientUrl = config.server.clientUrl || "http://localhost:3000";
+
+		const useSecureCookies = isProd || baseURL.startsWith("https://");
+
+		const sameSiteValue = isProd ? "none" : "lax";
+
 		authInstance = betterAuth({
 			appName: "HireMind",
 			secret: config.auth.secret,
@@ -21,35 +28,37 @@ export function getAuth() {
 				google: {
 					clientId: config.auth.googleClientId,
 					clientSecret: config.auth.googleClientSecret,
-					redirectURI: `${config.server.apiUrl}/api/auth/callback/google`,
+					redirectURI: `${baseURL}/api/auth/callback/google`,
 				},
 			},
 			session: {
 				cookieCache: {
 					enabled: true,
-					maxAge: 1000 * 60 * 5,
+					maxAge: 5 * 60,
 				},
+				expiresIn: 60 * 60 * 24 * 7,
+				updateAge: 60 * 60 * 24,
 			},
-			baseURL: config.server.apiUrl || "http://localhost:4000",
+			baseURL: baseURL,
 			advanced: {
-				useSecureCookies: isProd,
+				useSecureCookies: useSecureCookies,
 				cookies: {
 					session_token: {
 						name: "hiremind_session_token",
 						attributes: {
 							httpOnly: true,
-							sameSite: "none",
-							secure: true,
+							sameSite: sameSiteValue,
+							secure: useSecureCookies,
+							...(isProd && { domain: undefined }),
 						},
 					},
 				},
 			},
-
-			trustedOrigins: [config.server.clientUrl || "http://localhost:3000"],
+			trustedOrigins: [clientUrl],
 			hooks: {
 				after: createAuthMiddleware(async (ctx) => {
 					if (ctx.path.startsWith("/callback")) {
-						throw ctx.redirect(config.server.clientUrl + "/dashboard");
+						throw ctx.redirect(clientUrl + "/dashboard");
 					}
 				}),
 			},
