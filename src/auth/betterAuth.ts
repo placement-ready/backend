@@ -52,6 +52,24 @@ export function getAuth() {
 							...(isProd && { domain: undefined }),
 						},
 					},
+					session_data: {
+						name: "hiremind_session_data",
+						attributes: {
+							httpOnly: false,
+							sameSite: sameSiteValue,
+							secure: useSecureCookies,
+							...(isProd && { domain: undefined }),
+						},
+					},
+					dont_remember: {
+						name: "hiremind_dont_remember",
+						attributes: {
+							httpOnly: false,
+							sameSite: sameSiteValue,
+							secure: useSecureCookies,
+							...(isProd && { domain: undefined }),
+						},
+					},
 				},
 			},
 			trustedOrigins: [clientUrl],
