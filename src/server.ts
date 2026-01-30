@@ -45,8 +45,10 @@ app.use(
 		origin: config.cors.origin,
 		methods: config.cors.methods,
 		credentials: true,
+		allowedHeaders: ["Content-Type", "Authorization", "Set-Cookie", "Cookie"],
 	}),
 );
+app.options("*", cors());
 
 // Rate limiting
 app.use(rateLimiter);
