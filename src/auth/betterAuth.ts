@@ -8,12 +8,8 @@ let authInstance: ReturnType<typeof betterAuth>;
 
 export function getAuth() {
 	if (!authInstance) {
-		const baseURL = config.server.apiUrl || "http://localhost:4000";
-		const clientUrl = config.server.clientUrl || "http://localhost:3000";
-
-		const useSecureCookies = isProd || baseURL.startsWith("https://");
-
-		const sameSiteValue = isProd ? "none" : "lax";
+		const baseURL = config.server.apiUrl;
+		const clientUrl = config.server.clientUrl;
 
 		authInstance = betterAuth({
 			appName: "HireMind",
@@ -39,49 +35,27 @@ export function getAuth() {
 				expiresIn: 60 * 60 * 24 * 7,
 				updateAge: 60 * 60 * 24,
 			},
-			baseURL: baseURL,
+			baseURL,
 			advanced: {
-				useSecureCookies: useSecureCookies,
-				cookies: {
-					session_token: {
-						name: "hiremind_session_token",
-						attributes: {
-							httpOnly: true,
-							sameSite: sameSiteValue,
-							secure: useSecureCookies,
-							...(isProd && { domain: undefined }),
-						},
-					},
-					session_data: {
-						name: "hiremind_session_data",
-						attributes: {
-							httpOnly: false,
-							sameSite: sameSiteValue,
-							secure: useSecureCookies,
-							...(isProd && { domain: undefined }),
-						},
-					},
-					dont_remember: {
-						name: "hiremind_dont_remember",
-						attributes: {
-							httpOnly: false,
-							sameSite: sameSiteValue,
-							secure: useSecureCookies,
-							...(isProd && { domain: undefined }),
-						},
-					},
+				useSecureCookies: true,
+				crossSubDomainCookies: {
+					enabled: true,
+					domain: clientUrl,
+				},
+				defaultCookieAttributes: {
+					httpOnly: true,
+					secure: true,
 				},
 			},
 			trustedOrigins: [clientUrl],
 			hooks: {
 				after: createAuthMiddleware(async (ctx) => {
 					if (ctx.path.startsWith("/callback")) {
-						throw ctx.redirect(clientUrl + "/dashboard");
+						throw ctx.redirect(`${clientUrl}/dashboard`);
 					}
 				}),
 			},
 		});
 	}
-
 	return authInstance;
 }
