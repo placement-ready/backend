@@ -6,22 +6,8 @@ import { getAuthDb } from "../db/mongo";
 
 let authInstance: ReturnType<typeof betterAuth>;
 
-function getCookieDomain(url: string): string | undefined {
-	const hostname = new URL(url).hostname;
-	if (hostname === "localhost" || hostname === "127.0.0.1") {
-		return undefined;
-	}
-	const parts = hostname.split(".");
-	if (parts.length > 2) {
-		return "." + parts.slice(-2).join(".");
-	}
-	return "." + hostname;
-}
-
 export function getAuth() {
 	if (!authInstance) {
-		const cookieDomain = getCookieDomain(config.server.clientUrl);
-
 		authInstance = betterAuth({
 			appName: "HireMind",
 			secret: config.auth.secret,
@@ -47,22 +33,18 @@ export function getAuth() {
 			baseURL: config.server.apiUrl || "http://localhost:4000",
 			advanced: {
 				useSecureCookies: isProd,
-				crossSubDomainCookies: {
-					enabled: isProd && !!cookieDomain,
-					domain: cookieDomain,
-				},
 				cookies: {
 					session_token: {
 						name: "hiremind_session_token",
 						attributes: {
 							httpOnly: true,
-							sameSite: isProd ? "none" : "lax",
-							secure: isProd,
-							...(cookieDomain && { domain: cookieDomain }),
+							sameSite: "none",
+							secure: true,
 						},
 					},
 				},
 			},
+
 			trustedOrigins: [config.server.clientUrl || "http://localhost:3000"],
 			hooks: {
 				after: createAuthMiddleware(async (ctx) => {
