@@ -19,6 +19,7 @@ export function getAuth() {
 				enabled: true,
 				autoSignIn: true,
 				requireEmailVerification: false,
+				minPasswordLength: 8,
 			},
 			socialProviders: {
 				google: {
@@ -37,14 +38,18 @@ export function getAuth() {
 			},
 			baseURL,
 			advanced: {
-				useSecureCookies: true,
-				crossSubDomainCookies: {
-					enabled: true,
-					domain: clientUrl.replace(/^https?:\/\//, "").split("/")[0],
-				},
+				useSecureCookies: isProd,
+				crossSubDomainCookies: isProd
+					? {
+							enabled: true,
+							domain: clientUrl.replace(/^https?:\/\//, "").split("/")[0],
+						}
+					: { enabled: false },
 				defaultCookieAttributes: {
 					httpOnly: true,
-					secure: true,
+					secure: isProd,
+					sameSite: "lax",
+					path: "/",
 				},
 			},
 			trustedOrigins: [clientUrl],
